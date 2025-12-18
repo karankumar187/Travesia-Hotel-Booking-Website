@@ -1,8 +1,45 @@
 import React from "react";
 import { assets } from "../assets/assets";
 import { cities } from "../assets/assets";
+import { useState } from "react";
+import { useAppContext } from "../context/AppContext1";
 
 export default function Hero() {
+
+  const {axios, navigate, setSearchedCities, getToken} = useAppContext()
+  const [destination, setDestination] = useState('')
+
+  const onSearch = async (e) => {
+  e.preventDefault();
+
+  navigate(`/rooms?destination=${destination}`);
+
+  try {
+    // Store recent searched city
+    await axios.post(
+      "/api/user/store-recent-search",
+      { recentSearchedCities: destination },
+      {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      }
+    );
+
+    // Update searched cities (max 3)
+    setSearchedCities((prev) => {
+      const updatedSearchedCities = [...prev, destination];
+      if (updatedSearchedCities.length > 3) {
+        updatedSearchedCities.shift();
+      }
+      return updatedSearchedCities;
+    });
+  } catch (error) {
+    console.error("Failed to store recent search:", error);
+  }
+};
+
+
   return (
     <div className="flex flex-col items-start justify-center px-6 md:px-16 lg:px-24 xl:px-32 text-white h-[60vh] bg-heroBg bg-cover bg-[url('/src/assets/bg1.png')] bg-center bg-no-repeat bg-cover h-screen">
       <p className="bg-[#49B9FF]/50 px-3.5 py-1 rounded-full mt-20">
@@ -15,10 +52,8 @@ export default function Hero() {
         From cozy apartments to luxury suites, Travesía helps you find spaces
         that feel personal, warm, and welcoming.
       </p>
-
-      {/* --- Replace your existing <form> ... </form> with this block --- */}
       <form
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={onSearch}
         className="relative bg-white/95 text-gray-700 rounded-2xl px-5 py-4 mt-8 flex flex-col md:flex-row gap-4 items-start md:items-end max-w-5xl shadow-2xl border border-white/30"
       >
         {/* CSS for animations (kept local and small) */}
@@ -59,6 +94,7 @@ export default function Hero() {
             type="text"
             placeholder="Where to?"
             required
+            onChange={e => setDestination(e.target.value)} value={destination}
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition-transform duration-150 focus:shadow-md focus:border-[#49B9FF]/60 focus:ring-0 focus-lift"
           />
           <datalist id="destinations">

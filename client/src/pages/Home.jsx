@@ -4,6 +4,7 @@ import FeaturedDestination from '../components/featuredDestination';
 import ExclusiveOffers from '../components/ExclusiveOffers';
 import Testimonial from '../components/Testimonial';
 import NewsLetter from '../components/NewsLetter';
+import RecommendedHotels from '../components/RecommendedHotels1';
 
 const Keyframes = () => (
     <style>{`
@@ -25,6 +26,7 @@ function Home(){
         <div>
             <Keyframes />
             <Hero />
+            <RecommendedHotels />
             <FeaturedDestination />
             <ExclusiveOffers></ExclusiveOffers>
             <Testimonial />

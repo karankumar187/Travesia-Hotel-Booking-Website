@@ -7,11 +7,13 @@ import {
   roomsDummyData,
 } from "../assets/assets";
 import StarRating from "../components/StarRating";
+import { useAppContext } from "../context/AppContext1";
 
 export default function RoomDetails() {
   const { id } = useParams();
   const [room, setRoom] = useState(null);
   const [mainImage, setMainImage] = useState(null);
+  const {navigate, getToken, rooms, axios} = useAppContext()
 
   useEffect(() => {
     const room = roomsDummyData.find((room) => room._id === id);
