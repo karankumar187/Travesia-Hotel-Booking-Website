@@ -16,11 +16,16 @@ const clerkWebhooks = async (req, res) => {
         // Getting data from req body 
         const {data, type} = req.body
 
+        // Check if email addresses exist
+        if (!data.email_addresses || data.email_addresses.length === 0) {
+            return res.json({success: false, message: "No email address found"});
+        }
+
         const userData = {
             _id: data.id,
             email: data.email_addresses[0].email_address,
-            username: data.first_name + " " + data.last_name,
-            image: data.image_url,
+            username: (data.first_name || "") + " " + (data.last_name || ""),
+            image: data.image_url || "",
         }
 
         // Switch case for different events 
@@ -47,8 +52,8 @@ const clerkWebhooks = async (req, res) => {
         res.json({success: true, message : "Webhook Recieved"})
 
     } catch (error) {
-        console.log(error.message)
-        res.json({success: false, meassge: error.message})
+        console.error("CLERK WEBHOOK ERROR:", error.message)
+        res.json({success: false, message: error.message})
     }
 }
 

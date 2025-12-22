@@ -1,40 +1,79 @@
 import React from "react";
 import { assets } from "../assets/assets";
-import { cities } from "../assets/assets";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext1";
 
 export default function Hero() {
 
   const {axios, navigate, setSearchedCities, getToken} = useAppContext()
   const [destination, setDestination] = useState('')
+  const [cities, setCities] = useState([])
+
+  // Fetch cities from backend
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const { data } = await axios.get("/api/hotels/cities");
+        if (data.success) {
+          setCities(data.cities || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch cities:", error);
+        // Keep empty array if fetch fails - search will still work for any city
+      }
+    };
+    fetchCities();
+  }, [axios]);
 
   const onSearch = async (e) => {
   e.preventDefault();
 
-  navigate(`/rooms?destination=${destination}`);
+  if (!destination || !destination.trim()) {
+    return;
+  }
 
-  try {
-    // Store recent searched city
-    await axios.post(
-      "/api/user/store-recent-search",
-      { recentSearchedCities: destination },
-      {
-        headers: {
-          Authorization: `Bearer ${await getToken()}`,
-        },
-      }
+  const trimmedDestination = destination.trim();
+
+  // Update searched cities immediately (optimistically) so recommended hotels show up right away
+  setSearchedCities((prev) => {
+    // Check if city already exists (case-insensitive)
+    const cityExists = prev.some(
+      (city) => city && city.toLowerCase().trim() === trimmedDestination.toLowerCase()
     );
+    
+    if (cityExists) {
+      // Move existing city to the end
+      const filtered = prev.filter(
+        (city) => city && city.toLowerCase().trim() !== trimmedDestination.toLowerCase()
+      );
+      return [...filtered, trimmedDestination];
+    }
+    
+    const updatedSearchedCities = [...prev, trimmedDestination];
+    if (updatedSearchedCities.length > 3) {
+      updatedSearchedCities.shift();
+    }
+    return updatedSearchedCities;
+  });
 
-    // Update searched cities (max 3)
-    setSearchedCities((prev) => {
-      const updatedSearchedCities = [...prev, destination];
-      if (updatedSearchedCities.length > 3) {
-        updatedSearchedCities.shift();
-      }
-      return updatedSearchedCities;
-    });
+  navigate(`/rooms?destination=${trimmedDestination}`);
+
+  // Try to store in backend (only if user is logged in)
+  try {
+    const token = await getToken();
+    if (token) {
+      await axios.post(
+        "/api/user/store-recent-search",
+        { recentSearchedCities: trimmedDestination },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    }
   } catch (error) {
+    // Silently fail - the city is already added to state, so recommended hotels will still show
     console.error("Failed to store recent search:", error);
   }
 };
@@ -177,7 +216,7 @@ export default function Hero() {
         >
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0f172a] to-black text-white px-5 py-3 font-semibold shadow-lg btn-glow"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0f172a] to-black text-white px-5 py-3 font-semibold shadow-lg btn-glow cursor-pointer"
             title="Search"
           >
             <span className="sun-pulse flex items-center justify-center rounded-full p-0.5">

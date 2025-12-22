@@ -29,18 +29,88 @@ const Navbar = () => {
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Hotels", path: "/rooms" },
-    { name: "Experience", path: "/" },
-    { name: "About", path: "/" },
+    { name: "Experience", path: "/experience" },
+    { name: "About", path: "/about" },
   ];
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchDestination, setSearchDestination] = useState("");
+  const [cities, setCities] = useState([]);
 
   const { openSignIn } = useClerk();
   
   const location = useLocation();
 
-  const{user,navigate,isOwner,setShowHotelReg}=useAppContext()
+  const{user,navigate,isOwner,setShowHotelReg,setSearchedCities,getToken,axios}=useAppContext()
+
+  // Fetch cities from backend
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const { data } = await axios.get("/api/hotels/cities");
+        if (data.success) {
+          setCities(data.cities || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch cities:", error);
+        // Keep empty array if fetch fails - search will still work for any city
+      }
+    };
+    fetchCities();
+  }, [axios]);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (!searchDestination || !searchDestination.trim()) {
+      return;
+    }
+
+    const trimmedDestination = searchDestination.trim();
+
+    // Update searched cities
+    setSearchedCities((prev) => {
+      const cityExists = prev.some(
+        (city) => city && city.toLowerCase().trim() === trimmedDestination.toLowerCase()
+      );
+      
+      if (cityExists) {
+        const filtered = prev.filter(
+          (city) => city && city.toLowerCase().trim() !== trimmedDestination.toLowerCase()
+        );
+        return [...filtered, trimmedDestination];
+      }
+      
+      const updatedSearchedCities = [...prev, trimmedDestination];
+      if (updatedSearchedCities.length > 3) {
+        updatedSearchedCities.shift();
+      }
+      return updatedSearchedCities;
+    });
+
+    navigate(`/rooms?destination=${trimmedDestination}`);
+    setIsSearchOpen(false);
+    setSearchDestination("");
+
+    // Try to store in backend (only if user is logged in)
+    try {
+      const token = await getToken();
+      if (token) {
+        await axios.post(
+          "/api/user/store-recent-search",
+          { recentSearchedCities: trimmedDestination },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Failed to store recent search:", error);
+    }
+  };
 
   useEffect(() => {
     if (location.pathname !== "/") {
@@ -57,6 +127,35 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location.pathname]);
+
+  // Close search when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isSearchOpen) {
+        const searchDropdown = event.target.closest('[data-search-dropdown]');
+        const searchIcon = event.target.closest('[data-search-icon]');
+        if (!searchDropdown && !searchIcon) {
+          setIsSearchOpen(false);
+        }
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && isSearchOpen) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    if (isSearchOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isSearchOpen]);
 
   return (
     <nav
@@ -114,13 +213,63 @@ const Navbar = () => {
 
       {/* Desktop Right */}
       <div className="hidden md:flex items-center gap-4">
-        <img
-          src={assets.searchIcon}
-          alt="search"
-          className={`h-7 transition-all duration-500 cursor-pointer ${
-            isScrolled ? "invert brightness-75" : ""
-          }`}
-        />
+        <div className="relative" data-search-dropdown>
+          <img
+            src={assets.searchIcon}
+            alt="search"
+            data-search-icon
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            className={`h-7 transition-all duration-500 cursor-pointer ${
+              isScrolled ? "invert brightness-75" : ""
+            }`}
+          />
+          
+          {/* Search Dropdown */}
+          {isSearchOpen && (
+            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50" data-search-dropdown>
+              <form onSubmit={handleSearch} className="space-y-3">
+                <div>
+                  <label htmlFor="navbar-search" className="text-sm font-medium text-gray-700 mb-2 block">
+                    Search Destination
+                  </label>
+                  <input
+                    id="navbar-search"
+                    list="navbar-destinations"
+                    type="text"
+                    placeholder="Where to?"
+                    value={searchDestination}
+                    onChange={(e) => setSearchDestination(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    autoFocus
+                  />
+                  <datalist id="navbar-destinations">
+                    {cities.map((city, i) => (
+                      <option key={i} value={city} />
+                    ))}
+                  </datalist>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    Search
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSearchOpen(false);
+                      setSearchDestination("");
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
 
         {user ? (
           <UserButton>
@@ -146,6 +295,66 @@ const Navbar = () => {
 
       {/* Mobile Menu Button */}
       <div className="flex items-center gap-3 md:hidden">
+        <div className="relative" data-search-dropdown>
+          <img
+            src={assets.searchIcon}
+            alt="search"
+            data-search-icon
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+            className={`h-6 transition-all duration-500 cursor-pointer ${
+              isScrolled ? "invert brightness-75" : ""
+            }`}
+          />
+          
+          {/* Mobile Search Dropdown */}
+          {isSearchOpen && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20 px-4" onClick={(e) => e.target === e.currentTarget && setIsSearchOpen(false)}>
+              <div className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-gray-200 p-4" data-search-dropdown>
+                <form onSubmit={handleSearch} className="space-y-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="mobile-navbar-search" className="text-sm font-medium text-gray-700">
+                      Search Destination
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSearchOpen(false);
+                        setSearchDestination("");
+                      }}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <input
+                    id="mobile-navbar-search"
+                    list="mobile-navbar-destinations"
+                    type="text"
+                    placeholder="Where to?"
+                    value={searchDestination}
+                    onChange={(e) => setSearchDestination(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    autoFocus
+                  />
+                  <datalist id="mobile-navbar-destinations">
+                    {cities.map((city, i) => (
+                      <option key={i} value={city} />
+                    ))}
+                  </datalist>
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                  >
+                    Search
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+        
         {user && (
           <UserButton>
             <UserButton.MenuItems>
@@ -161,7 +370,7 @@ const Navbar = () => {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           src={assets.menuIcon}
           alt=""
-          className={`${isScrolled && "inverted"} h-4`}
+          className={`${isScrolled && "inverted"} h-4 cursor-pointer`}
         />
       </div>
 
@@ -173,7 +382,7 @@ const Navbar = () => {
         }`}
       >
         <button
-          className="absolute top-4 right-4"
+          className="absolute top-4 right-4 cursor-pointer"
           onClick={() => setIsMenuOpen(false)}
         >
           <img src={assets.closeIcon} alt="" className={`h-6.5`} />
@@ -206,7 +415,7 @@ const Navbar = () => {
         {!user && (
           <button
             onClick={openSignIn}
-            className="bg-black text-white px-8 py-2.5 rounded-full transition-all duration-500"
+            className="bg-black text-white px-8 py-2.5 rounded-full transition-all duration-500 cursor-pointer"
           >
             Login
           </button>

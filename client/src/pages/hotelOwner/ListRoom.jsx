@@ -17,27 +17,30 @@ export default function ListRoom(){
             if(data.success){
                 setRooms(data.rooms)
             }else{
-                toast.error(data.error)
+                toast.error(data.message || "Failed to fetch rooms")
             }
 
 
         }catch(error){
-            toast.error(error.message)
+            toast.error(error.response?.data?.message || error.message || "Failed to fetch rooms")
         }
     }
 
     //toggle availability of the room 
 
     const toggleAvailability=async(roomId)=>{
-        const{data}=await axios.post('/api/rooms/toggle-availability',{roomId},
-            {headers: {Authorization: `Bearer ${await getToken()}`}})
+        try {
+            const{data}=await axios.post('/api/rooms/toggle-availability',{roomId},
+                {headers: {Authorization: `Bearer ${await getToken()}`}})
             if(data.success){
                 toast.success(data.message)
                 fetchRooms()
             }else{
-                toast.error(data.message)
+                toast.error(data.message || "Failed to update room availability")
             }
-        
+        } catch (error) {
+            toast.error(error.response?.data?.message || error.message || "Failed to update room availability")
+        }
     }
 
     useEffect(()=>{

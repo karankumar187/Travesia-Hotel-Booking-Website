@@ -157,6 +157,7 @@ export default function AllRooms() {
     `}</style>
   );
 
+
   return (
     <>
       <Keyframes />
@@ -164,63 +165,97 @@ export default function AllRooms() {
       <div className="flex flex-col-reverse lg:flex-row gap-8 pt-28 px-4 md:px-16 lg:px-24">
         {/* ROOMS */}
         <div className="flex-1 space-y-8">
-          {filteredRooms.map((room, index) => (
-            <article
-              key={room._id}
-              className="flex flex-col md:flex-row gap-6 bg-white rounded-xl shadow-sm p-6 fade-in-up"
-              style={{ animationDelay: `${index * 150}ms` }}
-            >
-              <div className="md:w-1/2 overflow-hidden rounded-xl">
-                <img
-                  src={room.images[0]}
-                  alt=""
-                  onClick={() => navigate(`/rooms/${room._id}`)}
-                  className="w-full h-full object-cover cursor-pointer transition-transform duration-700 hover:scale-105"
-                />
+          {filteredRooms.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-4">
+              <div className="text-center max-w-md">
+                <svg
+                  className="w-24 h-24 mx-auto text-gray-300 mb-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                <h3 className="text-2xl font-semibold text-gray-800 playfair-font mb-2">
+                  No Hotels Found
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {searchParams.get("destination")
+                    ? `We couldn't find any hotels in "${searchParams.get("destination")}". Try searching for a different city or clear your filters.`
+                    : "No hotels match your current filters. Try adjusting your search criteria."}
+                </p>
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
               </div>
-
-              <div className="md:w-1/2 flex flex-col justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">{room.hotel.city}</p>
-                  <h2
-                    className="text-3xl playfair-font cursor-pointer"
+            </div>
+          ) : (
+            filteredRooms.map((room, index) => (
+              <article
+                key={room._id}
+                className="flex flex-col md:flex-row gap-6 bg-white rounded-xl shadow-sm p-6 fade-in-up"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className="md:w-1/2 overflow-hidden rounded-xl">
+                  <img
+                    src={room.images[0]}
+                    alt=""
                     onClick={() => navigate(`/rooms/${room._id}`)}
-                  >
-                    {room.hotel.name}
-                  </h2>
-
-                  <div className="flex items-center gap-3 mt-2">
-                    <StarRating rating={room.hotel.rating} />
-                    <p className="text-sm text-gray-500">200+ reviews</p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    {room.amenities.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="px-3 py-2 bg-[#F5F5FF]/70 rounded-lg flex items-center gap-2"
-                      >
-                        <img src={facilityIcons[item]} className="h-4 w-4" />
-                        <span className="text-xs">{item}</span>
-                      </div>
-                    ))}
-                  </div>
+                    className="w-full h-full object-cover cursor-pointer transition-transform duration-700 hover:scale-105"
+                  />
                 </div>
 
-                <div className="flex justify-between items-center mt-4">
-                  <p className="text-xl font-medium">
-                    {currency} {room.pricePerNight} / night
-                  </p>
-                  <button
-                    onClick={() => navigate(`/rooms/${room._id}`)}
-                    className="border px-4 py-2 rounded-md hover:bg-gray-900 hover:text-white transition"
-                  >
-                    Book
-                  </button>
+                <div className="md:w-1/2 flex flex-col justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">{room.hotel.city}</p>
+                    <h2
+                      className="text-3xl playfair-font cursor-pointer"
+                      onClick={() => navigate(`/rooms/${room._id}`)}
+                    >
+                      {room.hotel.name}
+                    </h2>
+
+                    <div className="flex items-center gap-3 mt-2">
+                      <StarRating rating={room.hotel.rating} />
+                      <p className="text-sm text-gray-500">200+ reviews</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      {room.amenities.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-2 bg-[#F5F5FF]/70 rounded-lg flex items-center gap-2"
+                        >
+                          <img src={facilityIcons[item]} className="h-4 w-4" />
+                          <span className="text-xs">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4">
+                    <p className="text-xl font-medium">
+                      {currency} {room.pricePerNight} / night
+                    </p>
+                    <button
+                      onClick={() => navigate(`/rooms/${room._id}`)}
+                      className="border px-4 py-2 rounded-md hover:bg-gray-900 hover:text-white transition cursor-pointer"
+                    >
+                      Book
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </div>
 
         {/* FILTERS */}
@@ -228,7 +263,7 @@ export default function AllRooms() {
           <div className="bg-white border rounded-xl overflow-hidden">
             <div className="flex justify-between px-5 py-3 border-b">
               <p className="font-medium">Filters</p>
-              <button onClick={clearFilters} className="text-xs">
+              <button onClick={clearFilters} className="text-xs cursor-pointer">
                 Clear
               </button>
             </div>

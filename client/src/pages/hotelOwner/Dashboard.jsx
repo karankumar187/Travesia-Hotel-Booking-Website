@@ -16,7 +16,7 @@ export default function Dashboard(){
 
     const fetchDashboardData = async() => {
         try {
-            const {data} = await axios.get('/api/booking/hotel', {headers: {Authorization: `Bearer ${await getToken()}`}})
+            const {data} = await axios.get('/api/bookings/hotel', {headers: {Authorization: `Bearer ${await getToken()}`}})
             if(data.success){
                 setDashboardData(data.dashboardData)
             }
@@ -24,7 +24,7 @@ export default function Dashboard(){
                 toast.error(data.message)
             }
         } catch (error) {
-            toast.error(error.message)
+            toast.error(error.response?.data?.message || error.message || "Failed to fetch dashboard data")
         }
     }
 
@@ -70,16 +70,22 @@ export default function Dashboard(){
                         </tr>
                     </thead>
                     <tbody className="text-sm">
-                        {dashboardData.bookings.map((item, index) => (
-                            <tr key={index}>
-                                <td className="px-3 py-4 text-gray-700 border-t border-gray-300">{item.user.username}</td>
-                                <td className="px-3 py-4 text-gray-700 border-t border-gray-300 max-sm:hidden">{item.room.roomType}</td>
-                                <td className="px-3 py-4 text-gray-700 border-t border-gray-300 text-center">{currency} {item.totalPrice}</td>
-                                <td className="flex py-3 px-4 border-t border-gray-300">
-                                    <button className={`py-1 px-3 text-xs rounded-full mx-auto ${item.isPaid ? "bg-green-200 text-green-600":"bg-amber-200 text-yellow-600"}`}>{item.isPaid ? "Completed" : "Pending"}</button>
-                                </td>
+                        {dashboardData.bookings && dashboardData.bookings.length > 0 ? (
+                            dashboardData.bookings.map((item, index) => (
+                                <tr key={index}>
+                                    <td className="px-3 py-4 text-gray-700 border-t border-gray-300">{item.user?.username || "N/A"}</td>
+                                    <td className="px-3 py-4 text-gray-700 border-t border-gray-300 max-sm:hidden">{item.room?.roomType || "N/A"}</td>
+                                    <td className="px-3 py-4 text-gray-700 border-t border-gray-300 text-center">{currency} {item.totalPrice || 0}</td>
+                                    <td className="flex py-3 px-4 border-t border-gray-300">
+                                        <button className={`py-1 px-3 text-xs rounded-full mx-auto cursor-pointer ${item.isPaid ? "bg-green-200 text-green-600":"bg-amber-200 text-yellow-600"}`}>{item.isPaid ? "Completed" : "Pending"}</button>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="4" className="px-3 py-4 text-gray-500 text-center">No bookings found</td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

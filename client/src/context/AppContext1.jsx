@@ -23,9 +23,9 @@ export const AppProvider = ({ children }) => {
     try {
       const { data } = await axios.get("/api/rooms");
       if (data.success) setRooms(data.rooms);
-      else toast.error(data.message);
+      else toast.error(data.message || "Failed to fetch rooms");
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message || "Failed to fetch rooms");
     }
   };
 
@@ -41,12 +41,18 @@ export const AppProvider = ({ children }) => {
         setTimeout(fetchUser, 5000);
       }
     } catch (error) {
-      toast.error(error.message);
+      // Don't show error toast for user fetch, just retry silently
+      setTimeout(fetchUser, 5000);
     }
   };
 
   useEffect(() => {
-    if (user) fetchUser();
+    if (user) {
+      fetchUser();
+    } else {
+      // Clear isOwner when user logs out (but keep searchedCities)
+      setIsOwner(false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -67,6 +73,7 @@ export const AppProvider = ({ children }) => {
     setSearchedCities,
     rooms,
     setRooms,
+    fetchUser, // Expose fetchUser so components can refresh user data
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

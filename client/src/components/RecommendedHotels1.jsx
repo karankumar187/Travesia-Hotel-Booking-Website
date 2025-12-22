@@ -1,27 +1,33 @@
 import HotelCard from "./HotelCard";
 import Title from "./Title";
 import { useAppContext } from "../context/AppContext1";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 export default function RecommendedHotels() {
   const { rooms, searchedCities } = useAppContext();
-  const [recommended, setRecommended] = useState([]);
 
-  const filterHotels = () => {
+  // Use useMemo to filter hotels based on searched cities
+  const recommended = useMemo(() => {
     if (!searchedCities || searchedCities.length === 0) {
-      setRecommended([]);
-      return;
+      return [];
     }
 
-    const filteredHotels = rooms.filter((room) =>
-      searchedCities.includes(room.hotel.city)
-    );
+    if (!rooms || rooms.length === 0) {
+      return [];
+    }
 
-    setRecommended(filteredHotels);
-  };
+    // Case-insensitive city matching
+    const filteredHotels = rooms.filter((room) => {
+      if (!room.hotel || !room.hotel.city) return false;
+      return searchedCities.some(
+        (searchedCity) =>
+          searchedCity &&
+          room.hotel.city &&
+          searchedCity.toLowerCase().trim() === room.hotel.city.toLowerCase().trim()
+      );
+    });
 
-  useEffect(() => {
-    filterHotels();
+    return filteredHotels;
   }, [rooms, searchedCities]);
 
   if (recommended.length === 0) return null;
