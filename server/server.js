@@ -11,6 +11,7 @@ import connectCloudinary from "./configs/cloudinaryApi.js";
 import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import reviewRouter from "./routes/reviewRoutes.js";
+import statsRouter from "./routes/statsRoutes.js";
 import { testEmail } from "./controllers/emailController.js";
 
 connectDB();
@@ -38,6 +39,7 @@ app.use("/api/hotels", hotelRouter);
 app.use("/api/rooms", roomRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/reviews", reviewRouter);
+app.use("/api/stats", statsRouter);
 
 // Test email endpoint (for debugging)
 app.post("/api/test-email", testEmail);

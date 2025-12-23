@@ -1,6 +1,7 @@
 import React from 'react';  
 import Hero from '../components/Hero';
 import FeaturedDestination from '../components/FeaturedDestination';
+import Stats from '../components/Stats';
 import ExclusiveOffers from '../components/ExclusiveOffers';
 import Testimonial from '../components/Testimonial';
 import NewsLetter from '../components/NewsLetter';
@@ -28,6 +29,7 @@ function Home(){
             <Hero />
             <RecommendedHotels />
             <FeaturedDestination />
+            <Stats />
             <ExclusiveOffers></ExclusiveOffers>
             <Testimonial />
             <NewsLetter />
