@@ -3,6 +3,7 @@ import Title from "../components/Title";
 import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext1";
 import toast from "react-hot-toast";
+import StarRating from "../components/StarRating";
 
 // Load Razorpay script
 const loadRazorpayScript = () => {
@@ -19,6 +20,8 @@ export default function MyBookings() {
   const { axios, getToken, user } = useAppContext();
   const [bookings, setBookings] = useState([]);
   const [processingPayment, setProcessingPayment] = useState(null);
+  const [reviewStates, setReviewStates] = useState({});
+  const [canReviewStates, setCanReviewStates] = useState({});
 
   const fetchUserBookings = async () => {
     try {
@@ -151,11 +154,72 @@ export default function MyBookings() {
     }
   };
 
+  const checkCanReview = async (bookingId) => {
+    try {
+      const { data } = await axios.get(`/api/reviews/can-review/${bookingId}`, {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`,
+        },
+      });
+      if (data.success) {
+        setCanReviewStates((prev) => ({
+          ...prev,
+          [bookingId]: data.canReview,
+        }));
+      }
+    } catch (error) {
+      console.error("Error checking review eligibility:", error);
+    }
+  };
+
+  const handleSubmitReview = async (bookingId, rating, comment) => {
+    try {
+      const { data } = await axios.post(
+        "/api/reviews",
+        {
+          bookingId,
+          rating,
+          comment,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${await getToken()}`,
+          },
+        }
+      );
+
+      if (data.success) {
+        toast.success("Review submitted successfully!");
+        setReviewStates((prev) => ({
+          ...prev,
+          [bookingId]: { show: false, rating: 0, comment: "" },
+        }));
+        setCanReviewStates((prev) => ({
+          ...prev,
+          [bookingId]: false,
+        }));
+      } else {
+        toast.error(data.message || "Failed to submit review");
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to submit review");
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchUserBookings();
     }
   }, [user, getToken]);
+
+  useEffect(() => {
+    // Check review eligibility for each paid booking
+    bookings.forEach((booking) => {
+      if (booking.isPaid && booking.status === "confirmed") {
+        checkCanReview(booking._id);
+      }
+    });
+  }, [bookings]);
 
   return (
     <div className="py-28 md:pb-35 md:pt-32 px-4 md:px-16 lg:px-24 xl:px-32">
@@ -249,6 +313,57 @@ export default function MyBookings() {
                   {processingPayment === booking._id ? "Processing..." : "Pay Now"}
                 </button>
               )}
+
+              {booking.isPaid && booking.status === "confirmed" && (
+                <div className="mt-4">
+                  {canReviewStates[booking._id] && !reviewStates[booking._id]?.show && (
+                    <button
+                      onClick={() =>
+                        setReviewStates((prev) => ({
+                          ...prev,
+                          [booking._id]: { show: true, rating: 0, comment: "" },
+                        }))
+                      }
+                      className="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-full hover:bg-blue-700 transition cursor-pointer"
+                    >
+                      Write Review
+                    </button>
+                  )}
+                  {reviewStates[booking._id]?.show && (
+                    <ReviewForm
+                      bookingId={booking._id}
+                      rating={reviewStates[booking._id].rating}
+                      comment={reviewStates[booking._id].comment}
+                      onRatingChange={(rating) =>
+                        setReviewStates((prev) => ({
+                          ...prev,
+                          [booking._id]: { ...prev[booking._id], rating },
+                        }))
+                      }
+                      onCommentChange={(comment) =>
+                        setReviewStates((prev) => ({
+                          ...prev,
+                          [booking._id]: { ...prev[booking._id], comment },
+                        }))
+                      }
+                      onSubmit={() => {
+                        const state = reviewStates[booking._id];
+                        if (state.rating > 0 && state.comment.trim()) {
+                          handleSubmitReview(booking._id, state.rating, state.comment);
+                        } else {
+                          toast.error("Please provide both rating and comment");
+                        }
+                      }}
+                      onCancel={() =>
+                        setReviewStates((prev) => ({
+                          ...prev,
+                          [booking._id]: { show: false, rating: 0, comment: "" },
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -258,6 +373,58 @@ export default function MyBookings() {
             No bookings found.
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Review Form Component
+function ReviewForm({ bookingId, rating, comment, onRatingChange, onCommentChange, onSubmit, onCancel }) {
+  return (
+    <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <h4 className="text-sm font-semibold mb-3">Write a Review</h4>
+      <div className="mb-3">
+        <label className="text-xs text-gray-600 mb-1 block">Rating</label>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              onClick={() => onRatingChange(star)}
+              className="cursor-pointer"
+            >
+              <img
+                src={star <= rating ? assets.starIconFilled : assets.starIconOutlined}
+                className="h-5 w-5"
+                alt={`${star} star`}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mb-3">
+        <label className="text-xs text-gray-600 mb-1 block">Comment</label>
+        <textarea
+          value={comment}
+          onChange={(e) => onCommentChange(e.target.value)}
+          placeholder="Share your experience..."
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          rows="3"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onSubmit}
+          className="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-full hover:bg-blue-700 transition cursor-pointer"
+        >
+          Submit
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-4 py-1.5 text-xs border border-gray-300 rounded-full hover:bg-gray-100 transition cursor-pointer"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   );

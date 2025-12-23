@@ -6,8 +6,8 @@ import User from "../models/User.js";
 import razorpay from "../configs/razorpay.js";
 import crypto from "crypto";
 import { fetchUserFromClerk } from "../utils/clerkHelper.js";
-//function to check availability of room
 
+//function to check availability of room
 const checkAvailability=async({checkInDate,checkOutDate,room})=>{
     try{
         const bookings=await Booking.find({
@@ -19,7 +19,7 @@ const checkAvailability=async({checkInDate,checkOutDate,room})=>{
         return isAvailable;
     }catch(error){
         console.error("CHECK AVAILABILITY ERROR:", error.message);
-        return false; // Return false on error to be safe
+        return false;
     }
 }
 
@@ -42,7 +42,7 @@ export const createBooking = async (req, res) => {
     const { room, checkInDate, checkOutDate, guests } = req.body;
 
     const auth = await req.auth();
-    const user = auth.userId; // ✅ Clerk user
+    const user = auth.userId; 
 
     if (!user) {
       return res.status(401).json({

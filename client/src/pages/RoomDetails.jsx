@@ -17,6 +17,9 @@ export default function RoomDetails() {
   const [guests, setGuests] = useState(1);
 
   const [isAvailable, setIsAvailable] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
 
   /* ---------------- Load Room ---------------- */
   useEffect(() => {
@@ -26,6 +29,24 @@ export default function RoomDetails() {
       setMainImage(foundRoom.images[0]);
     }
   }, [rooms, id]);
+
+  /* ---------------- Load Reviews ---------------- */
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!id) return;
+      try {
+        const { data } = await axios.get(`/api/reviews/room/${id}`);
+        if (data.success) {
+          setReviews(data.reviews);
+          setAverageRating(data.averageRating || 0);
+          setTotalReviews(data.totalReviews || 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch reviews:", error);
+      }
+    };
+    fetchReviews();
+  }, [id, axios]);
 
   /* -------- Reset availability when dates change -------- */
   useEffect(() => {
@@ -111,8 +132,11 @@ export default function RoomDetails() {
 
       {/* Rating */}
       <div className="flex items-center gap-2 mt-2">
-        <StarRating rating={room.hotel.rating} />
-        <p>200+ reviews</p>
+        <StarRating rating={averageRating || room.hotel.rating || 4} />
+        <p>{totalReviews > 0 ? `${totalReviews} review${totalReviews !== 1 ? 's' : ''}` : 'No reviews yet'}</p>
+        {averageRating > 0 && (
+          <span className="text-gray-600">({averageRating.toFixed(1)} rating)</span>
+        )}
       </div>
 
       {/* Address */}
@@ -265,6 +289,55 @@ export default function RoomDetails() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-16">
+        <h2 className="text-2xl font-bold playfair-font text-gray-800 mb-6">
+          Reviews {totalReviews > 0 && `(${totalReviews})`}
+        </h2>
+        {reviews.length > 0 ? (
+          <div className="space-y-6">
+            {reviews.map((review) => (
+              <div
+                key={review._id}
+                className="p-6 bg-white rounded-xl border border-gray-200 shadow-sm"
+              >
+                <div className="flex items-start gap-4">
+                  {review.user?.image ? (
+                    <img
+                      src={review.user.image}
+                      alt={review.user.username}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                      <span className="text-gray-600 font-semibold">
+                        {review.user?.username?.charAt(0).toUpperCase() || "U"}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <p className="font-semibold text-gray-800">
+                        {review.user?.username || "Anonymous"}
+                      </p>
+                      <StarRating rating={review.rating} />
+                      <span className="text-sm text-gray-500">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-gray-700">{review.comment}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-8 bg-gray-50 rounded-xl border border-gray-200 text-center">
+            <p className="text-gray-600">No reviews yet. Be the first to review this room!</p>
+          </div>
+        )}
       </div>
 
       {/* Owner Details - Bottom of Page */}

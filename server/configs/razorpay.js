@@ -1,11 +1,5 @@
 import Razorpay from "razorpay";
 
-// Initialize Razorpay instance
-// Get test mode keys from Razorpay dashboard: https://dashboard.razorpay.com/app/keys
-// Add to .env file:
-// RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxxx
-// RAZORPAY_KEY_SECRET=your_test_secret_key
-
 const keyId = process.env.RAZORPAY_KEY_ID;
 const keySecret = process.env.RAZORPAY_KEY_SECRET;
 

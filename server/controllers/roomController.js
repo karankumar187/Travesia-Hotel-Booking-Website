@@ -13,12 +13,12 @@ export const createRoom = async (req, res) => {
       return res.json({ success: false, message: "No hotel found" });
     }
 
-    // 🔥 SAFETY CHECK
+    // SAFETY CHECK
     if (!req.files || req.files.length === 0) {
       return res.json({ success: false, message: "No images uploaded" });
     }
 
-    // 🔥 CLOUDINARY UPLOAD
+    // CLOUDINARY UPLOAD
     const uploadImages = req.files.map(async (file) => {
       const result = await cloudinary.uploader.upload(file.path, {
         folder: "rooms",

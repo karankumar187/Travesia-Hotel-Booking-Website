@@ -6,7 +6,7 @@ export const registerHotel=async(req,res)=>{
     try{
         const {name,address,contact,city}=req.body;
         const auth = await req.auth();
-        const owner=auth.userId; // ✅ Clerk user
+        const owner=auth.userId;
 
         if (!owner) {
             return res.status(401).json({
