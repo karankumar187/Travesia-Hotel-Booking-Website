@@ -29,8 +29,8 @@ function Home(){
             <Hero />
             <RecommendedHotels />
             <FeaturedDestination />
-            <Stats />
             <ExclusiveOffers></ExclusiveOffers>
+            <Stats />
             <Testimonial />
             <NewsLetter />
         </div>

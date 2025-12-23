@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext1";
+import Title from "./Title";
 
 const Keyframes = () => (
   <style>{`
@@ -77,17 +78,17 @@ const StatCard = ({ icon, value, label, delay }) => {
   return (
     <div
       id={`stat-${label}`}
-      className="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 fade-in-up"
+      className="flex flex-col items-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 fade-in-up"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="text-4xl mb-4">{icon}</div>
-      <div className="text-4xl md:text-5xl font-bold playfair-font text-indigo-600 mb-2 count-up">
+      <div className="text-4xl md:text-5xl font-bold playfair-font text-gray-800 mb-2 count-up">
         {typeof displayValue === "number" && displayValue % 1 !== 0
           ? displayValue.toFixed(1)
           : displayValue.toLocaleString()}
-        {label === "Overall Rating" && <span className="text-2xl">/5</span>}
+        {label === "Overall Rating" && <span className="text-2xl text-gray-600">/5</span>}
       </div>
-      <p className="text-gray-600 font-medium text-center">{label}</p>
+      <p className="text-gray-600 font-medium text-center text-sm">{label}</p>
     </div>
   );
 };
@@ -120,59 +121,50 @@ export default function Stats() {
 
   if (loading) {
     return (
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-gradient-to-br from-indigo-50 to-blue-50">
+      <div className="px-6 md:px-16 lg:px-24 xl:px-32 pt-10 pb-30 bg-slate-50">
         <Keyframes />
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4">
-              Our Impact
-            </h2>
-            <p className="text-gray-600">Loading statistics...</p>
-          </div>
-        </div>
+        <Title
+          align="center"
+          title="Our Impact"
+          subTitle="Loading statistics..."
+        />
       </div>
     );
   }
 
   return (
-    <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-gradient-to-br from-indigo-50 to-blue-50">
+    <div className="px-6 md:px-16 lg:px-24 xl:px-32 pt-10 pb-30 bg-slate-50">
       <Keyframes />
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12 fade-in-up">
-          <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4">
-            Our Impact
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Join thousands of travelers and hotel owners who trust Travesía for their accommodation needs
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            icon="👥"
-            value={stats.totalUsers}
-            label="Total Users"
-            delay={0}
-          />
-          <StatCard
-            icon="🏨"
-            value={stats.totalHotels}
-            label="Hotels Registered"
-            delay={100}
-          />
-          <StatCard
-            icon="📅"
-            value={stats.totalBookings}
-            label="Total Bookings"
-            delay={200}
-          />
-          <StatCard
-            icon="⭐"
-            value={stats.overallRating}
-            label="Overall Rating"
-            delay={300}
-          />
-        </div>
+      <Title
+        align="center"
+        title="Our Impact"
+        subTitle="Join thousands of travelers and hotel owners who trust Travesía for their accommodation needs"
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+        <StatCard
+          icon="👥"
+          value={stats.totalUsers}
+          label="Total Users"
+          delay={0}
+        />
+        <StatCard
+          icon="🏨"
+          value={stats.totalHotels}
+          label="Hotels Registered"
+          delay={100}
+        />
+        <StatCard
+          icon="📅"
+          value={stats.totalBookings}
+          label="Total Bookings"
+          delay={200}
+        />
+        <StatCard
+          icon="⭐"
+          value={stats.overallRating}
+          label="Overall Rating"
+          delay={300}
+        />
       </div>
     </div>
   );
