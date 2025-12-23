@@ -31,7 +31,7 @@ export default function Testimonial() {
   const displayReviews = reviews.length > 0 ? reviews : testimonials;
 
   return (
-    <div className="flex flex-col items-center pb-20 py-20 w-full bg-slate-50">
+    <div className="flex flex-col items-center pb-20 py-20 w-full bg-white">
       <Title
         align="center"
         title="What Our Guests Say"

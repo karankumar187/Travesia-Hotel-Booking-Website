@@ -2,7 +2,7 @@ import { assets } from "../assets/assets";
 
 export default function NewsLetter() {
   return (
-    <div className="px-6 md:px-16 lg:px-24 xl:px-32 py-16 bg-white">
+    <div className="px-6 md:px-16 lg:px-24 xl:px-32 py-16 bg-bg-slate-50">
       <div className="w-full bg-slate-900 text-center text-white py-14 px-8 rounded-2xl shadow-lg">
 
         <h1 className="max-w-xl mx-auto text-3xl md:text-4xl font-semibold mt-2 leading-tight playfair-font">
