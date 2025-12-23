@@ -79,7 +79,7 @@ export default function Testimonial() {
               return (
                 <div
                   key={isApiReview ? review._id : index}
-                  className="p-4 rounded-lg mx-4 shadow hover:shadow-lg transition-all duration-200 w-80 shrink-0"
+                  className="p-4 rounded-lg mx-2 sm:mx-4 shadow hover:shadow-lg transition-all duration-200 w-72 sm:w-80 shrink-0 bg-white"
                 >
                   <div className="flex gap-2">
                     {userImage ? (

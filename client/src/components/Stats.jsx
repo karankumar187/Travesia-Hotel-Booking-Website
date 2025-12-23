@@ -78,17 +78,17 @@ const StatCard = ({ icon, value, label, delay }) => {
   return (
     <div
       id={`stat-${label}`}
-      className="flex flex-col items-center p-6 bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 fade-in-up"
+      className="flex flex-col items-center p-4 sm:p-6 bg-white rounded-lg sm:rounded-xl shadow-sm hover:shadow-md border border-gray-100 transition-all duration-300 fade-in-up"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="text-4xl mb-4">{icon}</div>
-      <div className="text-4xl md:text-5xl font-bold playfair-font text-gray-800 mb-2 count-up">
+      <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{icon}</div>
+      <div className="text-3xl sm:text-4xl md:text-5xl font-bold playfair-font text-gray-800 mb-2 count-up">
         {typeof displayValue === "number" && displayValue % 1 !== 0
           ? displayValue.toFixed(1)
           : displayValue.toLocaleString()}
-        {label === "Overall Rating" && <span className="text-2xl text-gray-600">/5</span>}
+        {label === "Overall Rating" && <span className="text-xl sm:text-2xl text-gray-600">/5</span>}
       </div>
-      <p className="text-gray-600 font-medium text-center text-sm">{label}</p>
+      <p className="text-gray-600 font-medium text-center text-xs sm:text-sm">{label}</p>
     </div>
   );
 };

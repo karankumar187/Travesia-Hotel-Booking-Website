@@ -15,7 +15,7 @@ const Keyframes = () => (
 
 const ExperienceCard = ({ title, description, image, delay }) => (
   <div
-    className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 fade-in-up cursor-pointer"
+    className="group relative overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 fade-in-up cursor-pointer"
     style={{ animationDelay: `${delay}ms` }}
   >
     <div className="aspect-[4/3] overflow-hidden">
@@ -26,14 +26,14 @@ const ExperienceCard = ({ title, description, image, delay }) => (
       />
     </div>
     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-        <h3 className="text-2xl font-bold playfair-font mb-2">{title}</h3>
-        <p className="text-sm text-gray-200">{description}</p>
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+        <h3 className="text-lg sm:text-xl md:text-2xl font-bold playfair-font mb-1 sm:mb-2">{title}</h3>
+        <p className="text-xs sm:text-sm text-gray-200">{description}</p>
       </div>
     </div>
-    <div className="absolute bottom-0 left-0 right-0 p-6 bg-white">
-      <h3 className="text-xl font-semibold playfair-font text-gray-800 mb-1">{title}</h3>
-      <p className="text-sm text-gray-600">{description}</p>
+    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-white">
+      <h3 className="text-lg sm:text-xl font-semibold playfair-font text-gray-800 mb-1">{title}</h3>
+      <p className="text-xs sm:text-sm text-gray-600">{description}</p>
     </div>
   </div>
 );
@@ -112,7 +112,7 @@ export default function Experience() {
       <Keyframes />
       
       {/* Hero Section */}
-      <div className="relative h-[60vh] md:h-[70vh] flex items-center justify-center overflow-hidden">
+      <div className="relative h-[50vh] sm:h-[60vh] md:h-[70vh] flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -121,28 +121,28 @@ export default function Experience() {
         >
           <div className="absolute inset-0 bg-black/50"></div>
         </div>
-        <div className="relative z-10 text-center text-white px-4 fade-in-up">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold playfair-font mb-4">
+        <div className="relative z-10 text-center text-white px-4 sm:px-6 fade-in-up">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold playfair-font mb-3 sm:mb-4">
             Discover Unique Experiences
           </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-200">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto text-gray-200 px-2">
             From adventure to relaxation, find experiences that create lasting memories
           </p>
         </div>
       </div>
 
       {/* Experiences Grid */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-slate-50">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-slate-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 fade-in-up">
-            <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12 fade-in-up">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-2 sm:mb-4">
               Curated Experiences
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-2">
               Each destination offers unique experiences tailored to your preferences
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {experiences.map((exp, index) => (
               <ExperienceCard
                 key={index}
@@ -157,28 +157,28 @@ export default function Experience() {
       </div>
 
       {/* Activities Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-white">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 fade-in-up">
-            <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12 fade-in-up">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-2 sm:mb-4">
               Popular Activities
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-2">
               Explore a wide range of activities during your stay
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
             {activities.map((activity, index) => (
               <div
                 key={index}
-                className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl hover:shadow-lg transition-all duration-300 fade-in-up cursor-pointer"
+                className="p-4 sm:p-5 md:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl hover:shadow-lg transition-all duration-300 fade-in-up cursor-pointer"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="text-4xl mb-4">{activity.icon}</div>
-                <h3 className="text-xl font-semibold playfair-font text-gray-800 mb-2">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{activity.icon}</div>
+                <h3 className="text-lg sm:text-xl font-semibold playfair-font text-gray-800 mb-1 sm:mb-2">
                   {activity.title}
                 </h3>
-                <p className="text-gray-600">{activity.description}</p>
+                <p className="text-sm sm:text-base text-gray-600">{activity.description}</p>
               </div>
             ))}
           </div>
@@ -186,17 +186,17 @@ export default function Experience() {
       </div>
 
       {/* CTA Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-gradient-to-r from-indigo-600 to-blue-600">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-gradient-to-r from-indigo-600 to-blue-600">
         <div className="max-w-4xl mx-auto text-center text-white fade-in-up">
-          <h2 className="text-3xl md:text-4xl font-bold playfair-font mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font mb-3 sm:mb-4">
             Ready to Create Your Perfect Experience?
           </h2>
-          <p className="text-lg text-indigo-100 mb-8">
+          <p className="text-sm sm:text-base md:text-lg text-indigo-100 mb-6 sm:mb-8 px-2">
             Start planning your next adventure and discover hotels that match your travel style
           </p>
           <button
             onClick={() => navigate("/rooms")}
-            className="bg-white text-indigo-600 px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
+            className="bg-white text-indigo-600 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
           >
             Explore Hotels
           </button>

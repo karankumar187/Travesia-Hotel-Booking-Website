@@ -33,13 +33,13 @@ export default function RecommendedHotels() {
   if (recommended.length === 0) return null;
 
   return (
-    <div className="flex flex-col items-center px-6 md:px-16 lg:px-24 xl:px-32 bg-slate-50 py-12">
+    <div className="flex flex-col items-center px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-slate-50 py-8 sm:py-10 md:py-12">
       <Title
         title="Recommended Destinations"
         subTitle="Handpicked stays inspired by your recent searches, offering comfort, familiarity, and a truly personal experience."
       />
 
-      <div className="flex flex-wrap items-center justify-center gap-4 mt-20">
+      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-12 sm:mt-16 md:mt-20">
         {recommended.slice(0, 4).map((room, index) => (
           <HotelCard key={room._id} room={room} index={index} />
         ))}

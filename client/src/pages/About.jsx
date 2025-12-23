@@ -51,7 +51,7 @@ export default function About() {
       <Keyframes />
       
       {/* Hero Section */}
-      <div className="relative h-[50vh] md:h-[60vh] flex items-center justify-center overflow-hidden">
+      <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -60,24 +60,24 @@ export default function About() {
         >
           <div className="absolute inset-0 bg-black/50"></div>
         </div>
-        <div className="relative z-10 text-center text-white px-4 fade-in-up">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold playfair-font mb-4">
+        <div className="relative z-10 text-center text-white px-4 sm:px-6 fade-in-up">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-bold playfair-font mb-3 sm:mb-4">
             About Travesía
           </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-200">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto text-gray-200 px-2">
             Your trusted partner in finding the perfect stay, anywhere in the world
           </p>
         </div>
       </div>
 
       {/* Story Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-white">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-white">
         <div className="max-w-4xl mx-auto fade-in-up">
-          <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-6 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4 sm:mb-6 text-center">
             Our Story
           </h2>
-          <div className="space-y-4 text-gray-600 leading-relaxed">
-            <p className="text-lg">
+          <div className="space-y-3 sm:space-y-4 text-sm sm:text-base text-gray-600 leading-relaxed">
+            <p className="text-base sm:text-lg">
               Travesía was born from a simple belief: every journey should feel personal, warm, and welcoming. 
               We understand that where you stay is more than just a place to sleep—it's an integral part of your travel experience.
             </p>
@@ -95,19 +95,19 @@ export default function About() {
       </div>
 
       {/* Stats Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-slate-50">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-slate-50">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
             {stats.map((stat, index) => (
               <div
                 key={index}
                 className="text-center fade-in-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="text-4xl md:text-5xl font-bold playfair-font text-indigo-600 mb-2">
+                <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold playfair-font text-indigo-600 mb-1 sm:mb-2">
                   {stat.number}
                 </div>
-                <div className="text-gray-600 font-medium">{stat.label}</div>
+                <div className="text-xs sm:text-sm md:text-base text-gray-600 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -115,28 +115,28 @@ export default function About() {
       </div>
 
       {/* Values Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-white">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-white">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12 fade-in-up">
-            <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4">
+          <div className="text-center mb-8 sm:mb-10 md:mb-12 fade-in-up">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-2 sm:mb-4">
               Our Values
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto px-2">
               The principles that guide everything we do
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
             {values.map((value, index) => (
               <div
                 key={index}
-                className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl hover:shadow-lg transition-all duration-300 fade-in-up"
+                className="p-4 sm:p-5 md:p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl hover:shadow-lg transition-all duration-300 fade-in-up"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="text-4xl mb-4">{value.icon}</div>
-                <h3 className="text-xl font-semibold playfair-font text-gray-800 mb-2">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{value.icon}</div>
+                <h3 className="text-lg sm:text-xl font-semibold playfair-font text-gray-800 mb-1 sm:mb-2">
                   {value.title}
                 </h3>
-                <p className="text-gray-600">{value.description}</p>
+                <p className="text-sm sm:text-base text-gray-600">{value.description}</p>
               </div>
             ))}
           </div>
@@ -144,17 +144,17 @@ export default function About() {
       </div>
 
       {/* Mission Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-gradient-to-r from-indigo-50 to-blue-50">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-gradient-to-r from-indigo-50 to-blue-50">
         <div className="max-w-4xl mx-auto text-center fade-in-up">
-          <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4 sm:mb-6">
             Our Mission
           </h2>
-          <p className="text-lg text-gray-700 leading-relaxed mb-8">
+          <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed mb-4 sm:mb-6 md:mb-8">
             To make travel more accessible, personal, and memorable by connecting people with 
             exceptional accommodations that feel like home. We believe every traveler deserves 
             a space that reflects their unique style and enhances their journey.
           </p>
-          <p className="text-lg text-gray-700 leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
             Through innovation, care, and a deep understanding of what makes a stay special, 
             we're building a community of travelers and hosts who share our passion for authentic experiences.
           </p>
@@ -162,25 +162,25 @@ export default function About() {
       </div>
 
       {/* CTA Section */}
-      <div className="py-16 px-4 md:px-16 lg:px-24 xl:px-32 bg-white">
+      <div className="py-10 sm:py-12 md:py-16 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-white">
         <div className="max-w-4xl mx-auto text-center fade-in-up">
-          <h2 className="text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold playfair-font text-gray-800 mb-3 sm:mb-4">
             Join Us on This Journey
           </h2>
-          <p className="text-lg text-gray-600 mb-8">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 sm:mb-8 px-2">
             Whether you're planning your next adventure or looking to share your space with travelers, 
             we're here to help make it happen.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button
               onClick={() => navigate("/rooms")}
-              className="bg-indigo-600 text-white px-8 py-3 rounded-full font-semibold hover:bg-indigo-700 transition-colors cursor-pointer"
+              className="bg-indigo-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold hover:bg-indigo-700 transition-colors cursor-pointer"
             >
               Explore Hotels
             </button>
             <button
               onClick={() => navigate("/")}
-              className="border-2 border-indigo-600 text-indigo-600 px-8 py-3 rounded-full font-semibold hover:bg-indigo-50 transition-colors cursor-pointer"
+              className="border-2 border-indigo-600 text-indigo-600 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-sm sm:text-base font-semibold hover:bg-indigo-50 transition-colors cursor-pointer"
             >
               Learn More
             </button>

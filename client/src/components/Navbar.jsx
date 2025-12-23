@@ -226,10 +226,10 @@ const Navbar = () => {
           
           {/* Search Dropdown */}
           {isSearchOpen && (
-            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50" data-search-dropdown>
-              <form onSubmit={handleSearch} className="space-y-3">
+            <div className="absolute right-0 top-12 w-72 sm:w-80 bg-white rounded-lg sm:rounded-xl shadow-2xl border border-gray-200 p-3 sm:p-4 z-50" data-search-dropdown>
+              <form onSubmit={handleSearch} className="space-y-2 sm:space-y-3">
                 <div>
-                  <label htmlFor="navbar-search" className="text-sm font-medium text-gray-700 mb-2 block">
+                  <label htmlFor="navbar-search" className="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2 block">
                     Search Destination
                   </label>
                   <input
@@ -239,7 +239,7 @@ const Navbar = () => {
                     placeholder="Where to?"
                     value={searchDestination}
                     onChange={(e) => setSearchDestination(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     autoFocus
                   />
                   <datalist id="navbar-destinations">
@@ -251,7 +251,7 @@ const Navbar = () => {
                 <div className="flex gap-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer"
                   >
                     Search
                   </button>
@@ -261,7 +261,7 @@ const Navbar = () => {
                       setIsSearchOpen(false);
                       setSearchDestination("");
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -308,11 +308,11 @@ const Navbar = () => {
           
           {/* Mobile Search Dropdown */}
           {isSearchOpen && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20 px-4" onClick={(e) => e.target === e.currentTarget && setIsSearchOpen(false)}>
-              <div className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-gray-200 p-4" data-search-dropdown>
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-16 sm:pt-20 px-4" onClick={(e) => e.target === e.currentTarget && setIsSearchOpen(false)}>
+              <div className="w-full max-w-md bg-white rounded-lg sm:rounded-xl shadow-2xl border border-gray-200 p-4 sm:p-5" data-search-dropdown>
                 <form onSubmit={handleSearch} className="space-y-3">
                   <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="mobile-navbar-search" className="text-sm font-medium text-gray-700">
+                    <label htmlFor="mobile-navbar-search" className="text-sm sm:text-base font-medium text-gray-700">
                       Search Destination
                     </label>
                     <button
@@ -321,7 +321,7 @@ const Navbar = () => {
                         setIsSearchOpen(false);
                         setSearchDestination("");
                       }}
-                      className="text-gray-500 hover:text-gray-700"
+                      className="text-gray-500 hover:text-gray-700 p-1"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -335,7 +335,7 @@ const Navbar = () => {
                     placeholder="Where to?"
                     value={searchDestination}
                     onChange={(e) => setSearchDestination(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     autoFocus
                   />
                   <datalist id="mobile-navbar-destinations">
@@ -345,7 +345,7 @@ const Navbar = () => {
                   </datalist>
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm sm:text-base font-medium transition-colors cursor-pointer"
                   >
                     Search
                   </button>
