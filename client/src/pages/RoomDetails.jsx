@@ -21,6 +21,11 @@ export default function RoomDetails() {
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
 
+  /* ---------------- Scroll to Top ---------------- */
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [id]);
+
   /* ---------------- Load Room ---------------- */
   useEffect(() => {
     const foundRoom = rooms.find((r) => r._id === id);
