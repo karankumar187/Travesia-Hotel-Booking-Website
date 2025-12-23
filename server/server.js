@@ -44,7 +44,13 @@ app.use("/api/stats", statsRouter);
 // Test email endpoint (for debugging)
 app.post("/api/test-email", testEmail);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on PORT ${PORT}`)
-);
+// Export for Vercel serverless functions
+export default app;
+
+// Start server for local development
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () =>
+    console.log(`🚀 Server running on PORT ${PORT}`)
+  );
+}
