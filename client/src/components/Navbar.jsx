@@ -43,7 +43,7 @@ const Navbar = () => {
   
   const location = useLocation();
 
-  const{user,navigate,isOwner,setShowHotelReg,setSearchedCities,getToken,axios}=useAppContext()
+  const{user,navigate,isOwner,setShowHotelReg,setSearchedCities,getToken,axios,fetchUser}=useAppContext()
 
   // Fetch cities from backend
   useEffect(() => {
@@ -106,6 +106,10 @@ const Navbar = () => {
             },
           }
         );
+        // Refresh user data from backend to sync searchedCities
+        if (fetchUser) {
+          await fetchUser();
+        }
       }
     } catch (error) {
       console.error("Failed to store recent search:", error);

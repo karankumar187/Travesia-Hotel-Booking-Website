@@ -224,8 +224,12 @@ export default function AllRooms() {
                     </h2>
 
                     <div className="flex items-center gap-3 mt-2">
-                      <StarRating rating={room.hotel.rating} />
-                      <p className="text-sm text-gray-500">200+ reviews</p>
+                      <StarRating rating={room.hotel.reviewStats?.averageRating || room.hotel.rating || 0} />
+                      <p className="text-sm text-gray-500">
+                        {room.hotel.reviewStats?.totalReviews > 0
+                          ? `${room.hotel.reviewStats.totalReviews} review${room.hotel.reviewStats.totalReviews !== 1 ? 's' : ''}`
+                          : 'No reviews yet'}
+                      </p>
                     </div>
 
                     <div className="flex flex-wrap gap-3 mt-4">

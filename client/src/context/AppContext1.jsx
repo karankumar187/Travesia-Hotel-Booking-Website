@@ -19,6 +19,34 @@ export const AppProvider = ({ children }) => {
   const [showHotelReg, setShowHotelReg] = useState(false);
   const [rooms, setRooms] = useState([]);
 
+  // Load searchedCities from sessionStorage for non-logged-in users
+  useEffect(() => {
+    if (!user) {
+      try {
+        const stored = sessionStorage.getItem('searchedCities');
+        if (stored) {
+          const cities = JSON.parse(stored);
+          if (Array.isArray(cities) && cities.length > 0) {
+            setSearchedCities(cities);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load searched cities from sessionStorage:", error);
+      }
+    }
+  }, []);
+
+  // Save searchedCities to sessionStorage for non-logged-in users
+  useEffect(() => {
+    if (!user && searchedCities.length > 0) {
+      try {
+        sessionStorage.setItem('searchedCities', JSON.stringify(searchedCities));
+      } catch (error) {
+        console.error("Failed to save searched cities to sessionStorage:", error);
+      }
+    }
+  }, [searchedCities, user]);
+
   const fetchRooms = async () => {
     try {
       const { data } = await axios.get("/api/rooms");
@@ -36,7 +64,10 @@ export const AppProvider = ({ children }) => {
       });
       if (data.success) {
         setIsOwner(data.role === "hotelOwner");
-        setSearchedCities(data.recentSearchedCities || []);
+        // Only update searchedCities if we got data from backend
+        if (data.recentSearchedCities && Array.isArray(data.recentSearchedCities)) {
+          setSearchedCities(data.recentSearchedCities);
+        }
       } else {
         setTimeout(fetchUser, 5000);
       }
@@ -49,8 +80,10 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       fetchUser();
+      // Clear sessionStorage when user logs in (use backend data instead)
+      sessionStorage.removeItem('searchedCities');
     } else {
-      // Clear isOwner when user logs out (but keep searchedCities)
+      // Clear isOwner when user logs out
       setIsOwner(false);
     }
   }, [user]);

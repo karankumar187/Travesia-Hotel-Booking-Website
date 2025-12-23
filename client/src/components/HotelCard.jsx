@@ -13,7 +13,11 @@ export default function HotelCard({room, index}) {
                     <p className="playfair-font text-lg sm:text-xl font-medium text-gray-800 truncate flex-1">{room.hotel.name}</p>
                     <div className="flex items-center gap-1 flex-shrink-0">
                         <img src={assets.starIconFilled} alt="star-icon" className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span className="text-xs sm:text-sm">4.5</span>
+                        <span className="text-xs sm:text-sm">
+                            {room.hotel.reviewStats?.averageRating > 0
+                              ? room.hotel.reviewStats.averageRating.toFixed(1)
+                              : room.hotel.rating || '4.5'}
+                        </span>
                     </div>
                 </div>
                 <div className="flex items-center gap-1 text-xs sm:text-sm mt-1">

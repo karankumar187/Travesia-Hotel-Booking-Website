@@ -192,6 +192,91 @@ export const getRecentReviews = async (req, res) => {
   }
 };
 
+// Get review statistics for a hotel
+// GET /api/reviews/hotel/:hotelId/stats
+export const getHotelReviewStats = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    const reviews = await Review.find({ hotel: hotelId });
+
+    const totalReviews = reviews.length;
+    const averageRating =
+      totalReviews > 0
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
+        : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalReviews,
+        averageRating: Math.round(averageRating * 10) / 10,
+      },
+    });
+  } catch (error) {
+    console.error("GET HOTEL REVIEW STATS ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch hotel review stats",
+      error: error.message,
+    });
+  }
+};
+
+// Get review statistics for multiple hotels (bulk)
+// POST /api/reviews/hotels/stats
+export const getBulkHotelReviewStats = async (req, res) => {
+  try {
+    const { hotelIds } = req.body;
+
+    if (!Array.isArray(hotelIds) || hotelIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "hotelIds array is required",
+      });
+    }
+
+    const reviews = await Review.find({ hotel: { $in: hotelIds } });
+
+    // Group reviews by hotel
+    const statsMap = {};
+    hotelIds.forEach((hotelId) => {
+      statsMap[hotelId] = {
+        totalReviews: 0,
+        averageRating: 0,
+      };
+    });
+
+    reviews.forEach((review) => {
+      const hotelId = review.hotel.toString();
+      if (statsMap[hotelId]) {
+        statsMap[hotelId].totalReviews++;
+        statsMap[hotelId].averageRating += review.rating;
+      }
+    });
+
+    // Calculate averages
+    Object.keys(statsMap).forEach((hotelId) => {
+      const stats = statsMap[hotelId];
+      if (stats.totalReviews > 0) {
+        stats.averageRating = Math.round((stats.averageRating / stats.totalReviews) * 10) / 10;
+      }
+    });
+
+    res.json({
+      success: true,
+      stats: statsMap,
+    });
+  } catch (error) {
+    console.error("GET BULK HOTEL REVIEW STATS ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch hotel review stats",
+      error: error.message,
+    });
+  }
+};
+
 // Check if user can review a booking
 // GET /api/reviews/can-review/:bookingId
 export const canReviewBooking = async (req, res) => {

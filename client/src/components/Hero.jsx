@@ -5,7 +5,7 @@ import { useAppContext } from "../context/AppContext1";
 
 export default function Hero() {
 
-  const {axios, navigate, setSearchedCities, getToken} = useAppContext()
+  const {axios, navigate, setSearchedCities, getToken, fetchUser} = useAppContext()
   const [destination, setDestination] = useState('')
   const [cities, setCities] = useState([])
 
@@ -71,6 +71,10 @@ export default function Hero() {
           },
         }
       );
+      // Refresh user data from backend to sync searchedCities
+      if (fetchUser) {
+        await fetchUser();
+      }
     }
   } catch (error) {
     // Silently fail - the city is already added to state, so recommended hotels will still show

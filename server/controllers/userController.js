@@ -47,17 +47,41 @@ export const storeRecentSearchedCities=async(req,res)=>{
         }
 
         const{recentSearchedCities}=req.body 
+        if (!recentSearchedCities || !recentSearchedCities.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "City name is required"
+            });
+        }
+
+        const trimmedCity = recentSearchedCities.trim();
         const user=req.user;
 
-        if(user.recentSearchedCities.length < 3){
-            user.recentSearchedCities.push(recentSearchedCities)
+        // Check if city already exists (case-insensitive)
+        const cityIndex = user.recentSearchedCities.findIndex(
+            (city) => city && city.toLowerCase().trim() === trimmedCity.toLowerCase()
+        );
 
-        }else{
-            user.recentSearchedCities.shift()
-            user.recentSearchedCities.push(recentSearchedCities)
+        if (cityIndex !== -1) {
+            // City exists, move it to the end
+            user.recentSearchedCities.splice(cityIndex, 1);
+            user.recentSearchedCities.push(trimmedCity);
+        } else {
+            // City doesn't exist, add it
+            if(user.recentSearchedCities.length < 3){
+                user.recentSearchedCities.push(trimmedCity);
+            } else {
+                user.recentSearchedCities.shift();
+                user.recentSearchedCities.push(trimmedCity);
+            }
         }
-        await user.save()
-        res.json({success: true,message: "city added"})
+        
+        await user.save();
+        res.json({
+            success: true,
+            message: "city added",
+            recentSearchedCities: user.recentSearchedCities
+        });
 
     }catch(error){
         console.error("STORE RECENT SEARCHED CITIES ERROR:", error);

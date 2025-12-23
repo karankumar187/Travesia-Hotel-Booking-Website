@@ -16,18 +16,29 @@ export default function RecommendedHotels() {
       return [];
     }
 
-    // Case-insensitive city matching
+    // Case-insensitive city matching with better normalization
     const filteredHotels = rooms.filter((room) => {
       if (!room.hotel || !room.hotel.city) return false;
-      return searchedCities.some(
-        (searchedCity) =>
-          searchedCity &&
-          room.hotel.city &&
-          searchedCity.toLowerCase().trim() === room.hotel.city.toLowerCase().trim()
-      );
+      
+      const roomCity = room.hotel.city.toString().toLowerCase().trim();
+      
+      return searchedCities.some((searchedCity) => {
+        if (!searchedCity) return false;
+        const searchCity = searchedCity.toString().toLowerCase().trim();
+        
+        // Exact match or partial match (in case of city with state/country)
+        return roomCity === searchCity || 
+               roomCity.includes(searchCity) || 
+               searchCity.includes(roomCity);
+      });
     });
 
-    return filteredHotels;
+    // Remove duplicates (same hotel appearing multiple times)
+    const uniqueHotels = filteredHotels.filter((room, index, self) =>
+      index === self.findIndex((r) => r.hotel._id === room.hotel._id)
+    );
+
+    return uniqueHotels;
   }, [rooms, searchedCities]);
 
   if (recommended.length === 0) return null;
