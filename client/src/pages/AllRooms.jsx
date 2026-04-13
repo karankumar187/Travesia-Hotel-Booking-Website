@@ -3,6 +3,9 @@ import { assets, facilityIcons } from "../assets/assets";
 import StarRating from "../components/StarRating";
 import { useState, useMemo } from "react";
 import { useAppContext } from "../context/AppContext1";
+import MapGL, { Marker, Popup } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { MapPin, List } from 'lucide-react';
 
 /* -------------------- Checkbox -------------------- */
 const CheckBox = ({ label, selected = false, onChange = () => {} }) => (
@@ -64,6 +67,8 @@ const RadioButton = ({ label, selected = false, onChange = () => {} }) => (
 /* ==================== MAIN COMPONENT ==================== */
 export default function AllRooms() {
   const [openFilters, setOpenFilters] = useState(false);
+  const [viewMode, setViewMode] = useState("list");
+  const [popupInfo, setPopupInfo] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { rooms, navigate, currency } = useAppContext();
 
@@ -75,7 +80,7 @@ export default function AllRooms() {
   const [selectedSort, setSelectedSort] = useState("");
 
   const roomTypes = ["Single Bed", "Double Bed", "Luxury Room", "Family Suite"];
-  const priceRange = ["0 to 500", "500 to 1000", "1000 to 3000", "3000 to 5000"];
+  const priceRange = ["0 to 500", "500 to 1000", "1000 to 3000", "3000 to 5000", "Above 5000"];
   const sortOptions = [
     "Price Low to High",
     "Price High to Low",
@@ -103,6 +108,7 @@ export default function AllRooms() {
   const matchesPriceRange = (room) =>
     selectedFilters.priceRange.length === 0 ||
     selectedFilters.priceRange.some((range) => {
+      if (range === "Above 5000") return room.pricePerNight > 5000;
       const [min, max] = range.split(" to ").map(Number);
       return room.pricePerNight >= min && room.pricePerNight <= max;
     });
@@ -125,16 +131,41 @@ export default function AllRooms() {
     return 0;
   };
 
-  /* -------------------- Memoized Rooms -------------------- */
+  /* -------------------- Memoized Rooms (one per hotel) -------------------- */
   const filteredRooms = useMemo(() => {
-    return rooms
-      .filter(
-        (room) =>
-          matchesRoomType(room) &&
-          matchesPriceRange(room) &&
-          filterDestination(room)
-      )
-      .sort(sortRooms);
+    // First apply filters on all rooms
+    const matching = rooms.filter(
+      (room) =>
+        matchesRoomType(room) &&
+        matchesPriceRange(room) &&
+        filterDestination(room)
+    );
+
+    // Group by hotel — keep cheapest room per hotel as the card representative
+    const hotelMap = new Map();
+    matching.forEach(room => {
+      const hotelId = room.hotel._id;
+      if (!hotelMap.has(hotelId)) {
+        hotelMap.set(hotelId, { ...room, _allRoomTypes: [room] });
+      } else {
+        const existing = hotelMap.get(hotelId);
+        existing._allRoomTypes.push(room);
+        // Keep cheapest as representative
+        if (room.pricePerNight < existing.pricePerNight) {
+          hotelMap.set(hotelId, { ...room, _allRoomTypes: existing._allRoomTypes });
+        }
+      }
+    });
+
+    const grouped = Array.from(hotelMap.values());
+
+    // Sort grouped results
+    return grouped.sort((a, b) => {
+      if (selectedSort === "Price Low to High") return a.pricePerNight - b.pricePerNight;
+      if (selectedSort === "Price High to Low") return b.pricePerNight - a.pricePerNight;
+      if (selectedSort === "Newest First") return new Date(b.createdAt) - new Date(a.createdAt);
+      return 0;
+    });
   }, [rooms, selectedFilters, selectedSort, searchParams]);
 
   /* -------------------- Clear Filters -------------------- */
@@ -162,9 +193,18 @@ export default function AllRooms() {
     <>
       <Keyframes />
 
-      <div className="flex flex-col-reverse lg:flex-row gap-8 pt-28 px-4 md:px-16 lg:px-24">
+      <div className="flex flex-col-reverse lg:flex-row gap-8 pt-28 pb-24 md:pb-32 px-4 md:px-16 lg:px-24">
         {/* ROOMS */}
         <div className="flex-1 space-y-8">
+          <div className="flex justify-end gap-2 pb-2">
+            <button onClick={() => setViewMode('list')} className={`px-4 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors ${viewMode === 'list' ? 'bg-gray-900 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+              <List size={18} /> List View
+            </button>
+            <button onClick={() => setViewMode('map')} className={`px-4 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors ${viewMode === 'map' ? 'bg-gray-900 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+              <MapPin size={18} /> Map View
+            </button>
+          </div>
+
           {filteredRooms.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-4">
               <div className="text-center max-w-md">
@@ -197,6 +237,66 @@ export default function AllRooms() {
                 </button>
               </div>
             </div>
+          ) : viewMode === "map" ? (
+            <div className="w-full h-[650px] rounded-xl overflow-hidden shadow-sm relative fade-in-up border">
+              {!import.meta.env.VITE_MAPBOX_TOKEN ? (
+                 <div className="absolute inset-0 bg-gray-50 flex items-center justify-center z-10 flex-col">
+                   <MapPin size={48} className="text-gray-400 mb-4" />
+                   <h3 className="text-xl font-medium text-gray-800">Map View Unavailable</h3>
+                   <p className="text-gray-500 mt-2 text-center max-w-md">Please add <code>VITE_MAPBOX_TOKEN</code> to your .env file to enable the interactive map.</p>
+                 </div>
+              ) : (
+              <MapGL
+                initialViewState={{
+                  longitude: 77.2090,
+                  latitude: 28.6139,
+                  zoom: 4
+                }}
+                mapStyle="mapbox://styles/mapbox/streets-v12"
+                mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
+              >
+                {filteredRooms.map((room) => {
+                  if(!room.hotel.location?.lat || !room.hotel.location?.lng) return null;
+                  return (
+                    <Marker 
+                      key={`marker-${room.hotel._id}`}
+                      longitude={room.hotel.location.lng} 
+                      latitude={room.hotel.location.lat}
+                      onClick={e => {
+                        e.originalEvent.stopPropagation();
+                        setPopupInfo(room);
+                      }}
+                    >
+                      <MapPin size={32} className="text-red-500 cursor-pointer drop-shadow-md hover:scale-110 transition-transform" />
+                    </Marker>
+                  )
+                })}
+                {popupInfo && (
+                  <Popup
+                    anchor="top"
+                    longitude={Number(popupInfo.hotel.location.lng)}
+                    latitude={Number(popupInfo.hotel.location.lat)}
+                    onClose={() => setPopupInfo(null)}
+                    className="z-10"
+                    closeOnClick={false}
+                  >
+                    <div className="p-1 w-48">
+                      <img src={popupInfo.images[0]} alt="" className="w-full h-24 object-cover rounded-md mb-2" />
+                      <h4 className="font-semibold text-sm leading-tight mb-1">{popupInfo.hotel.name}</h4>
+                      <p className="text-xs text-gray-600 mb-1">{popupInfo.hotel.city}</p>
+                      <p className="font-bold text-sm text-gray-900">{currency} {popupInfo.pricePerNight} <span className="font-normal text-xs text-gray-500">/ night</span></p>
+                      <button 
+                         onClick={() => navigate(`/rooms/${popupInfo._id}`)}
+                         className="mt-2 w-full bg-gray-900 text-white text-xs py-1.5 rounded-md cursor-pointer hover:bg-gray-800 transition"
+                      >
+                         View Details
+                      </button>
+                    </div>
+                  </Popup>
+                )}
+              </MapGL>
+              )}
+            </div>
           ) : (
             filteredRooms.map((room, index) => (
               <article
@@ -204,7 +304,7 @@ export default function AllRooms() {
                 className="flex flex-col md:flex-row gap-6 bg-white rounded-xl shadow-sm p-6 fade-in-up"
                 style={{ animationDelay: `${index * 150}ms` }}
               >
-                <div className="md:w-1/2 overflow-hidden rounded-xl">
+                <div className="md:w-5/12 h-64 md:h-72 lg:h-80 overflow-hidden rounded-xl shrink-0">
                   <img
                     src={room.images[0]}
                     alt=""
@@ -232,6 +332,21 @@ export default function AllRooms() {
                       </p>
                     </div>
 
+                    {/* Room type badges */}
+                    {room._allRoomTypes && room._allRoomTypes.length > 1 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {room._allRoomTypes.map(rt => (
+                          <button
+                            key={rt._id}
+                            onClick={() => navigate(`/rooms/${rt._id}`)}
+                            className="px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full text-xs font-medium hover:bg-indigo-100 cursor-pointer transition"
+                          >
+                            {rt.roomType} · {currency}{rt.pricePerNight}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-3 mt-4">
                       {room.amenities.map((item, idx) => (
                         <div
@@ -246,14 +361,17 @@ export default function AllRooms() {
                   </div>
 
                   <div className="flex justify-between items-center mt-4">
-                    <p className="text-xl font-medium">
-                      {currency} {room.pricePerNight} / night
-                    </p>
+                    <div>
+                      <p className="text-xs text-gray-400">Starting from</p>
+                      <p className="text-xl font-medium">
+                        {currency} {room.pricePerNight} / night
+                      </p>
+                    </div>
                     <button
                       onClick={() => navigate(`/rooms/${room._id}`)}
                       className="border px-4 py-2 rounded-md hover:bg-gray-900 hover:text-white transition cursor-pointer"
                     >
-                      Book
+                      View Rooms
                     </button>
                   </div>
                 </div>

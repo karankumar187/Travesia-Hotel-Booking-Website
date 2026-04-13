@@ -101,13 +101,21 @@ export const testimonials = [
     { id: 9, name: "Sophia Lee", address: "Seoul, South Korea", image: "https://images.unsplash.com/photo-1701615004837-40d8573b6652?q=80&w=200", rating: 5, review: "Amazing service! I always find the best luxury accommodations through QuickStay. Their recommendations never disappoint!" }
 ];
 
-// Facility Icon
 export const facilityIcons = {
     "Free WiFi": assets.freeWifiIcon,
     "Free Breakfast": assets.freeBreakfastIcon,
+    "Breakfast Included": assets.freeBreakfastIcon,
     "Room Service": assets.roomServiceIcon,
     "Mountain View": assets.mountainIcon,
     "Pool Access": assets.poolIcon,
+    "Heater/AC": assets.homeIcon,
+    "Spa Access": assets.heartIcon,
+    "Mini Bar": assets.roomServiceIcon,
+    "City View": assets.locationFilledIcon,
+    "Butler Service": assets.userIcon,
+    "Private Balcony": assets.mountainIcon,
+    "Airport Transfer": assets.arrowIcon,
+    "Lounge Access": assets.dashboardIcon,
 };
 
 // For Room Details Page

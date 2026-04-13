@@ -7,13 +7,24 @@ import razorpay from "../configs/razorpay.js";
 import crypto from "crypto";
 import { fetchUserFromClerk } from "../utils/clerkHelper.js";
 
+// Predefined active coupon codes and their percentage discount
+export const VALID_COUPONS = {
+  'WELCOME10': 0.10, // 10% off
+  'SUMMER20': 0.20,  // 20% off
+  'TRAVESIA50': 0.50, // 50% off
+  'WEEKEND15': 0.15, // 15% off
+  'FIRSTSTAY5': 0.05, // 5% off
+  'LUXURY25': 0.25   // 25% off
+};
+
 //function to check availability of room
 const checkAvailability=async({checkInDate,checkOutDate,room})=>{
     try{
         const bookings=await Booking.find({
             room,
-            checkInDate: {$lte: checkOutDate},
-            checkOutDate: {$gte: checkInDate},
+            status: { $ne: "cancelled" },
+            checkInDate: {$lt: checkOutDate},
+            checkOutDate: {$gt: checkInDate},
         })
         const isAvailable=bookings.length===0;
         return isAvailable;
@@ -286,16 +297,21 @@ export const getUserBookings = async (req, res) => {
 export const getHotelBookings = async (req, res) => {
   try {
     const auth = await req.auth();
-    const hotel = await Hotel.findOne({ owner: auth.userId });
+    const hotels = await Hotel.find({ owner: auth.userId });
 
-    if (!hotel) {
+    if (!hotels || hotels.length === 0) {
       return res.json({
-        success: false,
-        message: "No hotel found"
+        success: true,
+        dashboardData: {
+          bookings: [],
+          totalBookings: 0,
+          totalRevenue: 0
+        }
       });
     }
 
-    const bookings = await Booking.find({ hotel: hotel._id })
+    const hotelIds = hotels.map(h => h._id.toString());
+    const bookings = await Booking.find({ hotel: { $in: hotelIds } })
       .populate("room hotel user")
       .sort({ createdAt: -1 });
 
@@ -331,6 +347,7 @@ export const getHotelBookings = async (req, res) => {
 export const processPayment = async (req, res) => {
   try {
     const { bookingId } = req.params;
+    const { couponCode } = req.body;
     const auth = await req.auth();
     const user = auth.userId;
 
@@ -387,8 +404,19 @@ export const processPayment = async (req, res) => {
     // Get user data for payment
     const userData = await User.findById(user);
 
-    // Create Razorpay order
-    const amountInPaise = Math.round(booking.totalPrice * 100); // Amount in paise (multiply by 100)
+    // Process optional couponCode — applied ONLY for this payment, NOT saved to DB
+    let finalPrice = booking.totalPrice;
+    if (couponCode && typeof couponCode === 'string') {
+        const code = couponCode.trim().toUpperCase();
+        if (VALID_COUPONS[code]) {
+            const discount = VALID_COUPONS[code];
+            finalPrice = Math.floor(booking.totalPrice * (1 - discount));
+            console.log(`🎟️ Coupon ${code} applied! Original: ₹${booking.totalPrice}, Discounted: ₹${finalPrice}`);
+        }
+    }
+
+    // Create Razorpay order using finalPrice (never booking.totalPrice directly)
+    const amountInPaise = Math.round(finalPrice * 100);
     
     if (amountInPaise < 100) {
       return res.status(400).json({
@@ -527,15 +555,33 @@ export const verifyPayment = async (req, res) => {
     }
 
     // Payment verified successfully
+    try {
+        // Fetch original order to accurately capture the exact amount paid (including any coupon discounts)
+        const orderInfo = await razorpay.orders.fetch(orderId);
+        if (orderInfo && orderInfo.amount) {
+            booking.totalPrice = Math.floor(orderInfo.amount / 100);
+        }
+    } catch (err) {
+        console.error("Could not fetch order from Razorpay to finalize discount price:", err);
+    }
+    
     booking.isPaid = true;
     booking.paymentMethod = "razorpay";
     booking.status = "confirmed";
     // Store payment details if you have a paymentDetails field in your schema
     await booking.save();
 
-    // Get booking details with populated fields for email
+    // Get booking details with populated fields to prepare email and socket notification
     const bookingDetails = await Booking.findById(bookingId)
       .populate("room hotel");
+
+    // Real-time notification to Hotel Owner via Socket.io
+    if (req.io && bookingDetails && bookingDetails.hotel?.owner) {
+      req.io.emit(`new_booking_${bookingDetails.hotel.owner}`, {
+        message: `New booking paid: ${bookingDetails.room?.roomType}`,
+        amount: booking.totalPrice
+      });
+    }
 
     // Get user data for email
     let userData = await User.findById(user);
@@ -573,7 +619,34 @@ export const verifyPayment = async (req, res) => {
           
           if (senderEmail && process.env.SMTP_PASS) {
             console.log(`📤 Sending payment confirmation email to: ${userData.email}`);
-          
+            
+            // Generate PDF Invoice Buffer
+            const pdfBuffer = await new Promise((resolve, reject) => {
+              const doc = new PDFDocument({ margin: 50 });
+              const buffers = [];
+              doc.on('data', buffers.push.bind(buffers));
+              doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+              doc.fontSize(20).text('Booking Invoice', { align: 'center' });
+              doc.moveDown();
+              doc.fontSize(12).text(`Booking ID: ${bookingDetails._id}`);
+              doc.text(`Payment ID: ${paymentId}`);
+              doc.moveDown();
+              doc.text(`Customer Name: ${userData.username || 'Guest'}`);
+              doc.text(`Email: ${userData.email}`);
+              doc.moveDown();
+              doc.text(`Hotel Name: ${bookingDetails.hotel?.name || 'N/A'}`);
+              doc.text(`Location: ${bookingDetails.hotel?.address || 'N/A'}`);
+              doc.text(`Room Type: ${bookingDetails.room?.roomType || 'N/A'}`);
+              doc.text(`Check-in: ${new Date(bookingDetails.checkInDate).toLocaleDateString()}`);
+              doc.text(`Check-out: ${new Date(bookingDetails.checkOutDate).toLocaleDateString()}`);
+              doc.text(`Guests: ${bookingDetails.guests}`);
+              doc.moveDown();
+              doc.fontSize(14).text(`Total Amount Paid: ${process.env.CURRENCY || 'Rs.'} ${bookingDetails.totalPrice}`);
+              
+              doc.end();
+            });
+
           const mailOptions = {
             from: senderEmail,
             to: userData.email,
@@ -605,7 +678,14 @@ export const verifyPayment = async (req, res) => {
                 This is an automated confirmation email. Please do not reply to this email.
               </p>
             </div>
-            `
+            `,
+            attachments: [
+              {
+                filename: `invoice-${bookingDetails._id}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+              }
+            ]
           };
 
             const info = await transporter.sendMail(mailOptions);
@@ -659,3 +739,107 @@ export const verifyPayment = async (req, res) => {
     });
   }
 };
+
+//API to download invoice
+//GET /api/bookings/invoice/:bookingId
+export const downloadInvoice = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const auth = await req.auth();
+    const userId = auth.userId;
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const booking = await Booking.findById(bookingId).populate("room hotel");
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
+    if (booking.user.toString() !== userId.toString()) {
+      return res.status(403).json({ success: false, message: "Forbidden: you do not own this booking" });
+    }
+
+    if (!booking.isPaid || booking.status !== "confirmed") {
+      return res.status(400).json({ success: false, message: "Invoice only available for paid & confirmed bookings" });
+    }
+
+    // Use createRequire for pdfkit compatibility in ESM projects
+    const { createRequire } = await import("module");
+    const require = createRequire(import.meta.url);
+    const PDFDocument = require("pdfkit");
+
+    // Build PDF into a buffer first before sending — avoids partial stream corruption
+    const pdfBuffer = await new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50, size: "A4" });
+      const chunks = [];
+
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      // --- Header ---
+      doc.fontSize(26).font("Helvetica-Bold").fillColor("#1a56db").text("TRAVESÍA", { align: "center" });
+      doc.moveDown(0.3);
+      doc.fontSize(10).font("Helvetica").fillColor("#555555").text("Official Booking Invoice", { align: "center" });
+      doc.moveDown(1.5);
+
+      // Divider
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#cccccc").stroke();
+      doc.moveDown(1);
+
+      // --- Invoice Meta ---
+      doc.fontSize(11).fillColor("#333333");
+      doc.text(`Invoice ID:      INV-${bookingId.slice(-8).toUpperCase()}`);
+      doc.text(`Booking Date:    ${new Date(booking.createdAt).toLocaleDateString("en-IN")}`);
+      doc.text(`Payment Status:  PAID via ${(booking.paymentMethod || "Razorpay").toUpperCase()}`);
+      doc.moveDown(1.5);
+
+      // Divider
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#cccccc").stroke();
+      doc.moveDown(1);
+
+      // --- Reservation Details ---
+      doc.fontSize(14).font("Helvetica-Bold").fillColor("#1a56db").text("Reservation Details");
+      doc.moveDown(0.5);
+      doc.fontSize(11).font("Helvetica").fillColor("#333333");
+      doc.text(`Hotel:           ${booking.hotel?.name || "Travesia Property"}`);
+      doc.text(`Address:         ${booking.hotel?.address || "India"}`);
+      doc.text(`Room Type:       ${booking.room?.roomType || "Standard Room"}`);
+      doc.text(`Check-In:        ${new Date(booking.checkInDate).toDateString()}`);
+      doc.text(`Check-Out:       ${new Date(booking.checkOutDate).toDateString()}`);
+      doc.text(`Guests:          ${booking.guests}`);
+      doc.moveDown(1.5);
+
+      // Divider
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#cccccc").stroke();
+      doc.moveDown(1);
+
+      // --- Payment Summary ---
+      doc.fontSize(14).font("Helvetica-Bold").fillColor("#1a56db").text("Payment Summary");
+      doc.moveDown(0.5);
+      doc.fontSize(13).font("Helvetica-Bold").fillColor("#111111");
+      doc.text(`Total Paid:      INR ${Number(booking.totalPrice).toLocaleString("en-IN")}/-`);
+
+      doc.moveDown(3);
+      doc.fontSize(9).font("Helvetica-Oblique").fillColor("#999999")
+         .text("Thank you for choosing Travesía. We hope to welcome you again!", { align: "center" });
+
+      doc.end();
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=Invoice-${bookingId.slice(-8).toUpperCase()}.pdf`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error("PDF INVOICE ERROR:", error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: error.message || "Invoice generation failed" });
+    }
+  }
+};
+

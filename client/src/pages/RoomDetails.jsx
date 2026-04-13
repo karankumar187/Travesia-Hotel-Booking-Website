@@ -1,16 +1,31 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { assets, facilityIcons, roomCommonData } from "../assets/assets";
 import StarRating from "../components/StarRating";
 import { useAppContext } from "../context/AppContext1";
 import toast from "react-hot-toast";
+import MapGL, { Marker } from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { MapPin, BedDouble, ChevronRight, Navigation, Heart } from "lucide-react";
 
 export default function RoomDetails() {
   const { id } = useParams();
-  const { navigate, getToken, rooms, axios } = useAppContext();
+  const { navigate, getToken, rooms, axios, user, wishlist, toggleWishlist } = useAppContext();
+  const isWishlisted = wishlist?.some(item => item._id === id || item === id);
+  const routerNav = useNavigate();
+  const location = useLocation();
 
   const [room, setRoom] = useState(null);
   const [mainImage, setMainImage] = useState(null);
+
+  // Stable derivation: find all sibling rooms from same hotel using url id + rooms context
+  const hotelRooms = useMemo(() => {
+    const currentRoom = rooms.find(r => r._id === id);
+    if (!currentRoom) return [];
+    const hotelId = String(currentRoom.hotel?._id || currentRoom.hotel || "");
+    if (!hotelId) return [];
+    return rooms.filter(r => String(r.hotel?._id || r.hotel || "") === hotelId);
+  }, [rooms, id]);
 
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
@@ -23,8 +38,10 @@ export default function RoomDetails() {
 
   /* ---------------- Scroll to Top ---------------- */
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-  }, [id]);
+    if (!location.state?.preventScroll) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  }, [id, location.state]);
 
   /* ---------------- Load Room ---------------- */
   useEffect(() => {
@@ -35,7 +52,7 @@ export default function RoomDetails() {
     }
   }, [rooms, id]);
 
-  /* ---------------- Load Reviews ---------------- */
+
   useEffect(() => {
     const fetchReviews = async () => {
       if (!id) return;
@@ -131,16 +148,27 @@ export default function RoomDetails() {
   return (
     <div className="py-20 sm:py-24 md:py-28 px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32">
       {/* Title */}
-      <h1 className="text-2xl sm:text-3xl md:text-4xl playfair-font">
-        {room.hotel.name} <span className="text-xs sm:text-sm">({room.roomType})</span>
-      </h1>
+      <div className="flex justify-between items-start gap-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl playfair-font">
+          {room.hotel.name} <span className="text-xs sm:text-sm">({room.roomType})</span>
+        </h1>
+        {user && (
+          <button
+            onClick={() => toggleWishlist(room._id)}
+            className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors shadow-sm whitespace-nowrap"
+          >
+            <Heart size={18} className={`transition-colors ${isWishlisted ? "fill-red-500 text-red-500" : "text-gray-500"}`} />
+            <span className="text-sm font-medium hidden sm:inline">{isWishlisted ? "Saved" : "Save"}</span>
+          </button>
+        )}
+      </div>
 
       {/* Rating */}
       <div className="flex flex-wrap items-center gap-2 mt-2">
-        <StarRating rating={averageRating || room.hotel.rating || 4} />
+        <StarRating rating={averageRating || room.hotel?.reviewStats?.averageRating || room.hotel?.rating || 0} />
         <p className="text-sm sm:text-base">{totalReviews > 0 ? `${totalReviews} review${totalReviews !== 1 ? 's' : ''}` : 'No reviews yet'}</p>
-        {averageRating > 0 && (
-          <span className="text-sm sm:text-base text-gray-600">({averageRating.toFixed(1)} rating)</span>
+        {(averageRating > 0 || room.hotel?.reviewStats?.averageRating > 0) && (
+          <span className="text-sm sm:text-base text-gray-600">({(averageRating || room.hotel?.reviewStats?.averageRating).toFixed(1)} rating)</span>
         )}
       </div>
 
@@ -170,6 +198,35 @@ export default function RoomDetails() {
           ))}
         </div>
       </div>
+
+      {/* ── Room Type Switcher ────────────────────────────────────────────── */}
+      {hotelRooms.length > 1 && (
+        <div className="mt-6 sm:mt-8">
+          <h3 className="text-base font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <BedDouble size={18} className="text-gray-700" /> Available Room Types at this Hotel
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            {hotelRooms.map(r => (
+              <button
+                key={r._id}
+                onClick={() => routerNav(`/rooms/${r._id}`, { state: { preventScroll: true } })}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium cursor-pointer transition-all ${
+                  r._id === id
+                    ? "bg-gray-900 text-white border-gray-900 shadow-md"
+                    : "bg-white text-gray-700 border-gray-200 hover:border-gray-900 hover:text-gray-900"
+                }`}
+              >
+                <BedDouble size={14} />
+                <span>{r.roomType}</span>
+                <span className={`text-xs ml-1 ${r._id === id ? "text-gray-300" : "text-gray-500"}`}>
+                  ₹{r.pricePerNight}/night
+                </span>
+                {r._id !== id && <ChevronRight size={13} className="text-gray-400" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Amenities */}
       <div className="mt-6 sm:mt-8 flex flex-wrap gap-2 sm:gap-3">
@@ -259,6 +316,49 @@ export default function RoomDetails() {
           </div>
         ))}
       </div>
+
+      {/* Map Section */}
+      {room.hotel?.location?.lat && room.hotel?.location?.lng && (
+        <div className="mt-8 sm:mt-12 md:mt-16">
+          <h2 className="text-xl sm:text-2xl font-bold playfair-font text-gray-800 mb-4 sm:mb-6">Location</h2>
+          <div className="relative h-64 sm:h-80 md:h-[450px] w-full rounded-2xl overflow-hidden shadow-md border border-gray-200 group">
+            <MapGL
+              initialViewState={{
+                longitude: room.hotel.location.lng,
+                latitude: room.hotel.location.lat,
+                zoom: 13
+              }}
+              mapStyle="mapbox://styles/mapbox/streets-v12"
+              mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
+            >
+              <Marker
+                longitude={room.hotel.location.lng}
+                latitude={room.hotel.location.lat}
+                anchor="bottom"
+              >
+                 <div className="bg-indigo-600 p-2.5 rounded-full shadow-lg shadow-indigo-600/30 ring-4 ring-white animate-bounce-slow">
+                   <MapPin className="text-white" size={20} />
+                 </div>
+              </Marker>
+            </MapGL>
+            
+            {/* Floating Directions Panel */}
+            <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto sm:w-80 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-xl shadow-xl border border-gray-100 z-10 transition-transform duration-300">
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base pr-4 line-clamp-1">{room.hotel.name}</h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">{room.hotel.address}</p>
+              
+              <button 
+                onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${room.hotel.location.lat},${room.hotel.location.lng}`, '_blank')}
+                className="mt-3 w-full sm:w-auto flex items-center justify-center gap-2 bg-gray-900 hover:bg-indigo-600 text-white text-xs font-semibold py-2.5 sm:py-2 px-4 rounded-lg transition-colors"
+                aria-label="Get directions to hotel"
+              >
+                <Navigation size={14} className="opacity-80" />
+                Get Directions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reviews Section */}
       <div className="mt-8 sm:mt-12 md:mt-16">
