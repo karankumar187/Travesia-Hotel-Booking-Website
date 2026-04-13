@@ -17,8 +17,18 @@ import { testEmail } from "./controllers/emailController.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
-connectDB();
 connectCloudinary();
+
+// Ensure DB is connected on every request (critical for Vercel serverless)
+const ensureDB = async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("DB connection failed:", err.message);
+    res.status(500).json({ success: false, message: "Database unavailable. Please try again." });
+  }
+};
 
 
 const app = express();
@@ -47,6 +57,9 @@ app.use(express.json());
 app.use(clerkMiddleware());
 
 app.get("/", (req, res) => res.end("API is working"));
+
+// Guarantee DB connection before any API route
+app.use("/api", ensureDB);
 
 app.use("/api/user", userRouter);
 app.use("/api/hotels", hotelRouter);
