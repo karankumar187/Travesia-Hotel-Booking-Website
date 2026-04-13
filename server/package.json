@@ -6,7 +6,12 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "drop-index": "node scripts/dropIndex.js",
+    "seed-hotels": "node scripts/seedHotels.js",
+    "update-images": "node scripts/updateHotelImages.js",
+    "clean-duplicates": "node scripts/cleanDuplicates.js",
+    "inspect-db": "node scripts/inspectDB.js"
   },
   "keywords": [],
   "author": "",
@@ -18,11 +23,14 @@
     "cros": "^1.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "groq-sdk": "^1.1.2",
     "mongodb": "^7.0.0",
     "mongoose": "^9.0.1",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
+    "pdfkit": "^0.18.0",
     "razorpay": "^2.9.6",
+    "socket.io": "^4.8.3",
     "svix": "^1.82.0"
   },
   "devDependencies": {
