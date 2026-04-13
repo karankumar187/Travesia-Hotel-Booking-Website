@@ -7,6 +7,7 @@ const userSchema = mongoose.Schema({
     image: {type: String, required: true},
     role: {type: String, enum: ["user", "hotelOwner"], default:"user"},
     recentSearchedCities: [{type: String, required: true}],
+    wishlist: [{type: mongoose.Schema.Types.ObjectId, ref: "Room"}],
 }, {timestamps : true}
 )
 

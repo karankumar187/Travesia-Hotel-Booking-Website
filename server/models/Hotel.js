@@ -6,6 +6,10 @@ const hotelSchema =new mongoose.Schema({
     contact: {type: String,required: true},
     owner: {type: String,required: true, ref: "User"},
     city: {type: String,required: true},
+    location: {
+        lat: { type: Number, required: false },
+        lng: { type: Number, required: false }
+    }
 },{timestamps: true})
 
 const Hotel=mongoose.model("Hotel",hotelSchema)

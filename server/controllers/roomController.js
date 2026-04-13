@@ -5,12 +5,15 @@ import Room from "../models/Room.js";
 
 export const createRoom = async (req, res) => {
   try {
-    const { roomType, pricePerNight, amenities } = req.body;
+    const { roomType, pricePerNight, amenities, hotelId } = req.body;
 
     const auth = await req.auth();
-    const hotel = await Hotel.findOne({ owner: auth.userId });
+    if (!hotelId) {
+      return res.json({ success: false, message: "Hotel ID is required" });
+    }
+    const hotel = await Hotel.findOne({ _id: hotelId, owner: auth.userId });
     if (!hotel) {
-      return res.json({ success: false, message: "No hotel found" });
+      return res.json({ success: false, message: "No matching hotel found or unauthorized" });
     }
 
     // SAFETY CHECK
@@ -118,11 +121,12 @@ export const getRooms=async(req,res)=>{
 export const getOwnerRooms=async(req,res)=>{
     try{
         const auth = await req.auth();
-        const hotelData=await Hotel.findOne({owner: auth.userId})
-        if (!hotelData) {
-            return res.json({ success: false, message: "No hotel found" });
+        const hotels = await Hotel.find({owner: auth.userId});
+        if (!hotels || hotels.length === 0) {
+            return res.json({ success: true, rooms: [] });
         }
-        const rooms=await Room.find({hotel: hotelData._id.toString()}).populate("hotel");
+        const hotelIds = hotels.map(h => h._id.toString());
+        const rooms=await Room.find({hotel: { $in: hotelIds }}).populate("hotel");
         res.json({success: true,rooms})
 
     }catch(error){
@@ -150,5 +154,17 @@ export const toggleRoomAvailability=async(req,res)=>{
     }catch(error){
         console.error("TOGGLE ROOM AVAILABILITY ERROR:", error);
         res.json({success: false,message: error.message})
+    }
+}
+
+// Public: get all rooms for a specific hotel (for room type picker on RoomDetails & HotelManage)
+export const getRoomsByHotel = async (req, res) => {
+    try {
+        const { hotelId } = req.params;
+        const rooms = await Room.find({ hotel: hotelId }).populate("hotel");
+        res.json({ success: true, rooms });
+    } catch (error) {
+        console.error("GET ROOMS BY HOTEL ERROR:", error);
+        res.json({ success: false, message: error.message });
     }
 }

@@ -12,13 +12,27 @@ import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import reviewRouter from "./routes/reviewRoutes.js";
 import statsRouter from "./routes/statsRoutes.js";
+import aiRouter from "./routes/aiRoutes.js";
 import { testEmail } from "./controllers/emailController.js";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 connectDB();
 connectCloudinary();
 
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: "*" }
+});
+
+// Pass io to request so controllers can use it
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 app.use(cors());
 
 // Clerk webhook (RAW body)
@@ -40,6 +54,7 @@ app.use("/api/rooms", roomRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/stats", statsRouter);
+app.use("/api/ai", aiRouter);
 
 // Test email endpoint (for debugging)
 app.post("/api/test-email", testEmail);
@@ -50,7 +65,7 @@ export default app;
 // Start server for local development
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () =>
+  httpServer.listen(PORT, () =>
     console.log(`🚀 Server running on PORT ${PORT}`)
   );
 }

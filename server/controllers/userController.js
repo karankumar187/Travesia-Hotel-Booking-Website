@@ -88,3 +88,38 @@ export const storeRecentSearchedCities=async(req,res)=>{
         res.json({success: false,message: error.message})
     }
 }
+
+export const toggleWishlist = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: "User not found" });
+        }
+        const { roomId } = req.body;
+        const user = req.user;
+        const index = user.wishlist.indexOf(roomId);
+        if (index > -1) {
+            user.wishlist.splice(index, 1);
+        } else {
+            user.wishlist.push(roomId);
+        }
+        await user.save();
+        res.json({ success: true, wishlist: user.wishlist, message: "Wishlist updated" });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}
+
+export const getWishlist = async (req, res) => {
+    try {
+         if (!req.user) {
+            return res.status(401).json({ success: false, message: "User not found" });
+        }
+        const user = await User.findById(req.user._id).populate({
+            path: 'wishlist',
+            populate: { path: 'hotel' }
+        });
+        res.json({ success: true, wishlist: user.wishlist });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+}

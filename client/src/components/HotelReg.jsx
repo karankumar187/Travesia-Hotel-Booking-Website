@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { useAppContext } from "../context/AppContext1";
 import toast from "react-hot-toast";
+import Map, { Marker } from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { MapPin } from "lucide-react";
 
 export default function HotelReg(){
 
@@ -12,6 +15,16 @@ export default function HotelReg(){
     const [contact,setContact]=useState("")
     const [city,setCity]=useState("")
     const [cities, setCities] = useState([])
+
+    // Manual map coordinates
+    const [manualLat, setManualLat] = useState(28.6139);
+    const [manualLng, setManualLng] = useState(77.2090);
+    const [markerDragged, setMarkerDragged] = useState(false);
+    const [viewState, setViewState] = useState({
+        longitude: 77.2090,
+        latitude: 28.6139,
+        zoom: 4
+    });
 
     // Fetch cities from backend
     useEffect(() => {
@@ -32,7 +45,13 @@ export default function HotelReg(){
     const onSubmitHandler=async(event)=>{
         try{
             event.preventDefault();
-            const {data}=await axios.post(`/api/hotels/`,{name,contact,address,city},{headers: {Authorization: `Bearer ${await getToken()}`}})
+            const payload = {
+                name, contact, address, city,
+                manualLat: markerDragged ? manualLat : undefined,
+                manualLng: markerDragged ? manualLng : undefined
+            };
+
+            const {data}=await axios.post(`/api/hotels/`, payload, {headers: {Authorization: `Bearer ${await getToken()}`}})
 
             if(data.success){
                 toast.success(data.message)
@@ -52,9 +71,35 @@ export default function HotelReg(){
 
     return(
         <div onClick={()=> setShowHotelReg(false)} className="fixed top-0 bottom-0 left-0 right-0 z-100 flex items-center justify-center bg-black/70">
-            <form onSubmit={onSubmitHandler} onClick={(e)=>e.stopPropagation()} className="flex bg-white rounded-xl max-w-4xl max-md:mx-2">
-                <img src={assets.regImage} alt="" className="w-1/2 rounded-xl hidden md:block"/>
-                <div className="relative flex flex-col items-center md:w-1/2 p-8 md:p-10">
+            <form onSubmit={onSubmitHandler} onClick={(e)=>e.stopPropagation()} className="flex bg-white rounded-xl md:w-[900px] max-w-5xl max-md:mx-2 min-h-[500px]">
+                
+                {/* Interactive Map Section */}
+                <div className="w-1/2 hidden md:block relative bg-gray-100 rounded-l-xl overflow-hidden border-r border-gray-200">
+                   <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm text-xs font-medium text-indigo-700 border border-indigo-100">
+                     Drag the pin to precisely locate your hotel
+                   </div>
+                   <Map
+                     {...viewState}
+                     onMove={evt => setViewState(evt.viewState)}
+                     mapStyle="mapbox://styles/mapbox/streets-v12"
+                     mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
+                   >
+                       <Marker
+                          longitude={manualLng}
+                          latitude={manualLat}
+                          draggable
+                          onDragEnd={(e) => {
+                             setManualLng(e.lngLat.lng);
+                             setManualLat(e.lngLat.lat);
+                             setMarkerDragged(true);
+                          }}
+                       >
+                          <MapPin className="text-indigo-600 fill-indigo-100 hover:scale-110 transition cursor-pointer" size={48} />
+                       </Marker>
+                   </Map>
+                </div>
+
+                <div className="relative flex flex-col justify-center bg-white md:w-1/2 p-8 md:p-10 rounded-r-xl">
                     <img src={ assets.closeIcon} className="absolute top-4 right-4 h-4 w-4 cursor-pointer" onClick={()=>setShowHotelReg(false)} alt="" />
                     <p className="text-2xl mt-6 font-semibold">Register Your Hotel</p>
 

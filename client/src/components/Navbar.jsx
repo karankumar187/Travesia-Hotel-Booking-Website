@@ -4,6 +4,7 @@ import { Link,  useLocation } from "react-router-dom";
 import { useClerk, UserButton } from "@clerk/clerk-react";
 import { useAppContext } from "../context/AppContext1";
 import Dashboard from "../pages/hotelOwner/Dashboard";
+import { Heart } from 'lucide-react';
 
 const BookIcon = () => (
   <svg
@@ -283,6 +284,11 @@ const Navbar = () => {
                 labelIcon={<BookIcon />}
                 onClick={() => navigate("/my-bookings")}
               ></UserButton.Action>
+              <UserButton.Action
+                label="My Wishlist"
+                labelIcon={<Heart size={16} />}
+                onClick={() => navigate("/wishlist")}
+              ></UserButton.Action>
             </UserButton.MenuItems>
           </UserButton>
         ) : (
@@ -366,6 +372,11 @@ const Navbar = () => {
                 label="My Bookings"
                 labelIcon={<BookIcon />}
                 onClick={() => navigate("/my-bookings")}
+              ></UserButton.Action>
+              <UserButton.Action
+                label="My Wishlist"
+                labelIcon={<Heart size={16} />}
+                onClick={() => navigate("/wishlist")}
               ></UserButton.Action>
             </UserButton.MenuItems>
           </UserButton>

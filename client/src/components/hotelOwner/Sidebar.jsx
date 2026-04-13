@@ -1,22 +1,50 @@
 import { NavLink } from "react-router-dom"
 import { assets } from "../../assets/assets"
+import { useAppContext } from "../../context/AppContext1"
+import { Building2, PlusCircle, LayoutDashboard, CalendarCheck, BarChart3 } from "lucide-react"
+
+const cls = (isActive) =>
+    `flex items-center py-3 px-4 md:px-6 gap-3 text-sm font-medium transition-colors duration-150 ${
+        isActive
+            ? "border-r-4 md:border-r-[5px] bg-indigo-50 border-indigo-600 text-indigo-600"
+            : "hover:bg-gray-50 border-transparent text-gray-600"
+    }`
 
 export default function Sidebar() {
+    const { setShowHotelReg } = useAppContext();
 
-    const sidebarLinks = [
-        {name: "Dashboard", path: "/owner", icon: assets.dashboardIcon },
-        {name: "Add Room", path: "/owner/add-room", icon: assets.addIcon },
-        {name: "List Room", path: "/owner/list-room", icon: assets.listIcon }
-    ]
+    return (
+        <div className="md:w-56 w-14 border-r min-h-full border-gray-200 pt-6 flex flex-col gap-1 transition-all duration-300 bg-white">
 
-    return(
-        <div className="md:w-64 w-16 border-r h-full text-base border-gray-300 pt-4 flex flex-col traansition-all duration-300">
-            {sidebarLinks.map((item, index) => (
-                <NavLink to={item.path} key={index} end="/owner" className={({isActive})=>`flex items-center py-3 px-4 md:px-8 gap-3 ${isActive ? "border-r-4 md:border-r-[6px] bg-blue-600/10 border-blue-600 text-blue-600" : "hover:bg-gray-100/90 border-white text-gray-700"}`}>
-                    <img src={item.icon} alt="" className="min-h-6 min-w-6" />
-                    <p className="md:block hidden text-center">{item.name}</p>
-                </NavLink>
-            ))}
+            <NavLink to="/owner" end className={({ isActive }) => cls(isActive)}>
+                <LayoutDashboard size={20} className="shrink-0" />
+                <p className="md:block hidden">Dashboard</p>
+            </NavLink>
+
+            <NavLink to="/owner/my-hotels" className={({ isActive }) => cls(isActive)}>
+                <Building2 size={20} className="shrink-0" />
+                <p className="md:block hidden">My Hotels</p>
+            </NavLink>
+
+            <NavLink to="/owner/bookings" className={({ isActive }) => cls(isActive)}>
+                <CalendarCheck size={20} className="shrink-0" />
+                <p className="md:block hidden">Bookings</p>
+            </NavLink>
+
+            <NavLink to="/owner/analytics" className={({ isActive }) => cls(isActive)}>
+                <BarChart3 size={20} className="shrink-0" />
+                <p className="md:block hidden">Analytics</p>
+            </NavLink>
+
+            <div className="mt-auto mb-4 border-t border-gray-100 pt-3">
+                <div
+                    onClick={() => setShowHotelReg(true)}
+                    className="flex items-center py-3 px-4 md:px-6 gap-3 cursor-pointer hover:bg-indigo-50 text-indigo-600 font-medium text-sm rounded-lg mx-2 transition-colors"
+                >
+                    <PlusCircle size={20} className="shrink-0" />
+                    <p className="md:block hidden">Add New Hotel</p>
+                </div>
+            </div>
         </div>
     )
 }

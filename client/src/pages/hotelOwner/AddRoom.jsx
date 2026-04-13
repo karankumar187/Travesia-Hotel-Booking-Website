@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Title from "../../components/Title";
 import { assets } from "../../assets/assets";
 import { useAppContext } from "../../context/AppContext1";
@@ -6,7 +6,21 @@ import toast from "react-hot-toast";
 
 export default function AddRoom() {
 
-  const {axios, getToken}=useAppContext()
+  const {axios, getToken, ownerHotels, fetchOwnerHotels}=useAppContext()
+  
+  const [selectedHotel, setSelectedHotel] = useState("");
+
+  useEffect(() => {
+      if (!ownerHotels || ownerHotels.length === 0) {
+          fetchOwnerHotels();
+      }
+  }, []);
+
+  useEffect(() => {
+      if (ownerHotels && ownerHotels.length === 1) {
+           setSelectedHotel(ownerHotels[0]._id);
+      }
+  }, [ownerHotels]);
 
 
   const [images, setImages] = useState({
@@ -38,9 +52,14 @@ export default function AddRoom() {
       toast.error("please fill in all the details")
       return;
     }
+    if (!selectedHotel) {
+      toast.error("Please select a hotel to add this room to");
+      return;
+    }
     setLoading(true);
     try{
       const formData=new FormData()
+        formData.append('hotelId', selectedHotel)
         formData.append('roomType',inputs.roomType)
         formData.append('pricePerNight',inputs.pricePerNight)
         //converting amenities to array and keeping only enabled amenities
@@ -117,6 +136,21 @@ export default function AddRoom() {
       </div>
 
       <div className="w-full flex max-sm:flex-col sm:gap-4 mt-4">
+        {/* Hotel Selection */}
+        <div className="flex-1 max-w-48">
+          <p className="text-gray-800 mt-4 ">Hotel</p>
+          <select
+            value={selectedHotel}
+            onChange={(e) => setSelectedHotel(e.target.value)}
+            className="border opacity-80 p-2 border-gray-300 mt-1.5 w-full rounded"
+          >
+            <option value="">Select Hotel</option>
+            {ownerHotels && ownerHotels.map(h => (
+               <option key={h._id} value={h._id}>{h.name}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex-1 max-w-48">
           <p className="text-gray-800 mt-4 ">Room Type</p>
           <select

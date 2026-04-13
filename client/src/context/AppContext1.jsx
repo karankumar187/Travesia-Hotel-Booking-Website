@@ -4,12 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { toast } from "react-hot-toast";
 
-axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+axios.defaults.baseURL = import.meta.env.DEV ? "http://localhost:3000" : import.meta.env.VITE_BACKEND_URL;
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  const currency = import.meta.env.VITE_CURRENCY || "₹";
+  const currency = "₹";
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken } = useAuth();
@@ -18,6 +18,8 @@ export const AppProvider = ({ children }) => {
   const [searchedCities, setSearchedCities] = useState([]);
   const [showHotelReg, setShowHotelReg] = useState(false);
   const [rooms, setRooms] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [ownerHotels, setOwnerHotels] = useState([]);
 
   // Load searchedCities from sessionStorage for non-logged-in users
   useEffect(() => {
@@ -57,6 +59,54 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchWishlist = async () => {
+    if (!user) return;
+    try {
+      const { data } = await axios.get("/api/user/wishlist", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+      if (data.success) {
+        setWishlist(data.wishlist || []);
+      }
+    } catch (error) {
+       console.log("Failed to fetch wishlist", error);
+    }
+  };
+
+  const toggleWishlist = async (roomId) => {
+    if (!user) {
+        toast.error("Please login to save rooms");
+        return;
+    }
+    try {
+      const inWishlist = wishlist.some(r => r._id === roomId || r === roomId);
+      
+      const { data } = await axios.post("/api/user/wishlist/toggle", { roomId }, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+      if (data.success) {
+         fetchWishlist();
+         toast.success(inWishlist ? "Removed from Wishlist" : "Added to Wishlist", { icon: '❤️' });
+      }
+    } catch (error) {
+       toast.error("Failed to update wishlist");
+    }
+  };
+
+  const fetchOwnerHotels = async () => {
+    if (!user) return;
+    try {
+      const { data } = await axios.get("/api/hotels/my", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+      if (data.success) {
+        setOwnerHotels(data.hotels);
+      }
+    } catch (error) {
+      console.log("Failed to fetch owner hotels");
+    }
+  };
+
   const fetchUser = async () => {
     try {
       const { data } = await axios.get("/api/user", {
@@ -80,13 +130,22 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       fetchUser();
+      fetchWishlist();
       // Clear sessionStorage when user logs in (use backend data instead)
       sessionStorage.removeItem('searchedCities');
     } else {
-      // Clear isOwner when user logs out
+      // Clear data when user logs out
       setIsOwner(false);
+      setWishlist([]);
+      setOwnerHotels([]);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (isOwner) {
+      fetchOwnerHotels();
+    }
+  }, [isOwner]);
 
   useEffect(() => {
     fetchRooms();
@@ -107,6 +166,10 @@ export const AppProvider = ({ children }) => {
     rooms,
     setRooms,
     fetchUser, // Expose fetchUser so components can refresh user data
+    wishlist,
+    toggleWishlist,
+    ownerHotels,
+    fetchOwnerHotels,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

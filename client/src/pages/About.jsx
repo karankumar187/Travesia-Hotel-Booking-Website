@@ -1,4 +1,4 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext1";
 
 const Keyframes = () => (
@@ -14,7 +14,27 @@ const Keyframes = () => (
 );
 
 export default function About() {
-  const { navigate } = useAppContext();
+  const { navigate, axios } = useAppContext();
+  const [realStats, setRealStats] = useState({
+    totalUsers: 0,
+    totalBookings: 0,
+    totalHotels: 0,
+    overallRating: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await axios.get("/api/stats");
+        if (data.success) {
+          setRealStats(data.stats);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      }
+    };
+    fetchStats();
+  }, [axios]);
 
   const values = [
     {
@@ -40,10 +60,10 @@ export default function About() {
   ];
 
   const stats = [
-    { number: "10K+", label: "Happy Guests" },
-    { number: "500+", label: "Properties" },
-    { number: "50+", label: "Destinations" },
-    { number: "4.8", label: "Average Rating" },
+    { number: `${realStats.totalUsers.toLocaleString()}+`, label: "Happy Guests" },
+    { number: `${realStats.totalHotels.toLocaleString()}+`, label: "Properties" },
+    { number: `${realStats.totalBookings.toLocaleString()}+`, label: "Successful Bookings" },
+    { number: realStats.overallRating.toFixed(1), label: "Average Rating" },
   ];
 
   return (

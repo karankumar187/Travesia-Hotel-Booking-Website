@@ -3,16 +3,26 @@ import { roomsDummyData } from "../assets/assets"
 import HotelCard from "./HotelCard"
 import Title from "./Title"
 import { useAppContext } from "../context/AppContext1"
+import { useMemo } from "react"
 
 export default function FeaturedDestination(){
 
     const {rooms, navigate} = useAppContext()
-    return rooms.length > 0 &&(
+
+    // Deduplicate rooms by hotel ID so we show 4 distinct hotels, not 4 rooms of the same hotel
+    const uniqueHotels = useMemo(() => {
+        if (!rooms) return [];
+        return rooms.filter((room, index, self) => 
+            index === self.findIndex((r) => r.hotel?._id === room.hotel?._id)
+        );
+    }, [rooms]);
+
+    return uniqueHotels.length > 0 &&(
         <div className="flex flex-col items-center px-4 sm:px-6 md:px-16 lg:px-24 xl:px-32 bg-slate-50 py-8 sm:py-10 md:py-12">
             <Title title="Featured Destination" subTitle="Every stay is crafted to feel personal, familiar, and relaxing.
                 Because you deserve more than a room — you deserve a home away from home." />
             <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-12 sm:mt-16 md:mt-20">
-                {rooms.slice(0,4).map((room, index) => (
+                {uniqueHotels.slice(0,4).map((room, index) => (
                     <HotelCard room={room} index={index} key={room._id}/>
                 ))}
             </div>

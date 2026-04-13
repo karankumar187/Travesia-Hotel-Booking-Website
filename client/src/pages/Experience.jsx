@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo } from "react";
 import { useAppContext } from "../context/AppContext1";
 
 const Keyframes = () => (
@@ -13,8 +13,9 @@ const Keyframes = () => (
   `}</style>
 );
 
-const ExperienceCard = ({ title, description, image, delay }) => (
+const ExperienceCard = ({ title, description, image, delay, onClick }) => (
   <div
+    onClick={onClick}
     className="group relative overflow-hidden rounded-lg sm:rounded-xl md:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 fade-in-up cursor-pointer"
     style={{ animationDelay: `${delay}ms` }}
   >
@@ -39,40 +40,28 @@ const ExperienceCard = ({ title, description, image, delay }) => (
 );
 
 export default function Experience() {
-  const { navigate } = useAppContext();
+  const { navigate, rooms } = useAppContext();
 
-  const experiences = [
-    {
-      title: "Luxury Beach Escapes",
-      description: "Discover pristine beaches and world-class resorts",
-      image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800",
-    },
-    {
-      title: "Mountain Adventures",
-      description: "Experience breathtaking mountain views and cozy retreats",
-      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=800",
-    },
-    {
-      title: "Urban Exploration",
-      description: "Immerse yourself in vibrant city life and culture",
-      image: "https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=800",
-    },
-    {
-      title: "Cultural Heritage",
-      description: "Explore historic sites and traditional architecture",
-      image: "https://images.unsplash.com/photo-1539650116574-75c0c6d73a6e?q=80&w=800",
-    },
-    {
-      title: "Nature Retreats",
-      description: "Reconnect with nature in serene forest settings",
-      image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=800",
-    },
-    {
-      title: "Desert Oasis",
-      description: "Experience the magic of desert landscapes and luxury",
-      image: "https://images.unsplash.com/photo-1509316785289-025f5b846b35?q=80&w=800",
-    },
-  ];
+  // Derive experiences dynamically from actual hotel cities in the database
+  const experiences = useMemo(() => {
+    if (!rooms || rooms.length === 0) return [];
+    
+    const cityMap = new Map();
+    
+    // Group by city to find unique cities and get a cover image
+    rooms.forEach(room => {
+      const city = room.hotel?.city;
+      if (city && !cityMap.has(city)) {
+          cityMap.set(city, {
+              title: city,
+              description: `Discover beautiful stays in ${city}`,
+              image: room.images[0] || room.hotel?.images?.[0] || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800",
+          });
+      }
+    });
+
+    return Array.from(cityMap.values()).slice(0, 6); // Display top 6 unique cities
+  }, [rooms]);
 
   const activities = [
     {
@@ -143,15 +132,18 @@ export default function Experience() {
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-            {experiences.map((exp, index) => (
+            {experiences.length > 0 ? experiences.map((exp, index) => (
               <ExperienceCard
                 key={index}
                 title={exp.title}
                 description={exp.description}
                 image={exp.image}
                 delay={index * 100}
+                onClick={() => {navigate(`/rooms?destination=${exp.title}`); scrollTo(0,0)}}
               />
-            ))}
+            )) : (
+              <p className="text-gray-500 col-span-full text-center">Loading experiences...</p>
+            )}
           </div>
         </div>
       </div>
