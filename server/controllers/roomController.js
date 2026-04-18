@@ -2,6 +2,7 @@
 import { cloudinary } from "../configs/cloudinaryApi.js";
 import Hotel from "../models/Hotel.js";
 import Room from "../models/Room.js";
+import { cacheGet, cacheSet, cacheDel, KEYS, TTL } from "../utils/cache.js";
 
 export const createRoom = async (req, res) => {
   try {
@@ -40,6 +41,9 @@ export const createRoom = async (req, res) => {
       isAvailable: true,
     });
 
+    // Invalidate stale caches
+    await cacheDel([KEYS.rooms(), KEYS.roomsByHotel(hotel._id.toString())]);
+
     res.json({ success: true, message: "Room created successfully" });
   } catch (error) {
     console.error("CREATE ROOM ERROR:", error);
@@ -51,69 +55,43 @@ export const createRoom = async (req, res) => {
 //api to get all rooms
 import Review from "../models/Review.js";
 
-export const getRooms=async(req,res)=>{
-    try{
-        const rooms=await Room.find({isAvailable: true}).populate({
+export const getRooms = async (req, res) => {
+    try {
+        // 1. Cache hit
+        const cached = await cacheGet(KEYS.rooms());
+        if (cached) return res.json({ success: true, rooms: cached });
+
+        // 2. DB query
+        const rooms = await Room.find({ isAvailable: true }).populate({
             path: 'hotel',
-            populate:{
-                path: 'owner',
-                select: 'username email image'
-            }
-            
-        }).sort({createdAt: -1})
-        
-        // Get unique hotel IDs (convert to ObjectId for query)
-        const hotelObjectIds = [...new Set(rooms.map(room => room.hotel._id))];
+            populate: { path: 'owner', select: 'username email image' }
+        }).sort({ createdAt: -1 });
+
+        const hotelObjectIds = [...new Set(rooms.map(r => r.hotel._id))];
         const hotelIdStrings = hotelObjectIds.map(id => id.toString());
-        
-        // Get review stats for all hotels
         const reviews = await Review.find({ hotel: { $in: hotelObjectIds } });
-        
-        // Calculate stats for each hotel
+
         const hotelStats = {};
-        hotelIdStrings.forEach((hotelId) => {
-            hotelStats[hotelId] = {
-                totalReviews: 0,
-                averageRating: 0,
-            };
+        hotelIdStrings.forEach(id => { hotelStats[id] = { totalReviews: 0, averageRating: 0 }; });
+        reviews.forEach(r => {
+            const id = r.hotel.toString();
+            if (hotelStats[id]) { hotelStats[id].totalReviews++; hotelStats[id].averageRating += r.rating; }
         });
-        
-        reviews.forEach((review) => {
-            // Convert ObjectId to string for comparison
-            const hotelId = review.hotel.toString();
-            if (hotelStats[hotelId]) {
-                hotelStats[hotelId].totalReviews++;
-                hotelStats[hotelId].averageRating += review.rating;
-            }
+
+        const roomsWithStats = rooms.map(room => {
+            const id = room.hotel._id.toString();
+            const stats = hotelStats[id] || { totalReviews: 0, averageRating: 0 };
+            const avg = stats.totalReviews > 0 ? Math.round((stats.averageRating / stats.totalReviews) * 10) / 10 : 0;
+            return { ...room.toObject(), hotel: { ...room.hotel.toObject(), reviewStats: { totalReviews: stats.totalReviews, averageRating: avg } } };
         });
-        
-        // Calculate averages and attach to rooms
-        const roomsWithStats = rooms.map((room) => {
-            const hotelId = room.hotel._id.toString();
-            const stats = hotelStats[hotelId] || { totalReviews: 0, averageRating: 0 };
-            
-            const averageRating = stats.totalReviews > 0
-                ? Math.round((stats.averageRating / stats.totalReviews) * 10) / 10
-                : 0;
-            
-            return {
-                ...room.toObject(),
-                hotel: {
-                    ...room.hotel.toObject(),
-                    reviewStats: {
-                        totalReviews: stats.totalReviews,
-                        averageRating: averageRating,
-                    }
-                }
-            };
-        });
-        
-        res.json({success: true, rooms: roomsWithStats})
-    }catch(error){
+
+        // 3. Cache result
+        await cacheSet(KEYS.rooms(), roomsWithStats, TTL.rooms);
+        res.json({ success: true, rooms: roomsWithStats });
+    } catch (error) {
         console.error("GET ROOMS ERROR:", error);
-        res.json({success: false,message: error.message})
+        res.json({ success: false, message: error.message });
     }
-    
 }
 
 
@@ -147,9 +125,10 @@ export const toggleRoomAvailability=async(req,res)=>{
         if (!roomData) {
             return res.json({ success: false, message: "Room not found" });
         }
-        roomData.isAvailable=!roomData.isAvailable;
-        await roomData.save()
-        res.json({success: true,message: "room availability updated"})
+        roomData.isAvailable = !roomData.isAvailable;
+        await roomData.save();
+        await cacheDel([KEYS.rooms(), KEYS.roomsByHotel(roomData.hotel.toString())]);
+        res.json({ success: true, message: "room availability updated" })
  
     }catch(error){
         console.error("TOGGLE ROOM AVAILABILITY ERROR:", error);
@@ -161,7 +140,11 @@ export const toggleRoomAvailability=async(req,res)=>{
 export const getRoomsByHotel = async (req, res) => {
     try {
         const { hotelId } = req.params;
+        const cached = await cacheGet(KEYS.roomsByHotel(hotelId));
+        if (cached) return res.json({ success: true, rooms: cached });
+
         const rooms = await Room.find({ hotel: hotelId }).populate("hotel");
+        await cacheSet(KEYS.roomsByHotel(hotelId), rooms, TTL.rooms);
         res.json({ success: true, rooms });
     } catch (error) {
         console.error("GET ROOMS BY HOTEL ERROR:", error);
