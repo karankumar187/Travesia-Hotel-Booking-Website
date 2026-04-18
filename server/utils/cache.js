@@ -2,7 +2,7 @@
  * Cache helpers backed by Redis (Upstash REST API via fetch).
  * All functions silently no-op when Redis is not configured.
  */
-import { redisGet, redisSet, redisDel, redisDelPattern } from "./redis.js";
+import { redisGet, redisSet, redisDel, redisDelPattern } from "../configs/redis.js";
 
 export const cacheGet = async (key) => {
   try { return await redisGet(key); }
