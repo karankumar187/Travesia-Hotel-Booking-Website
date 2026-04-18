@@ -113,13 +113,22 @@ export const createReview = async (req, res) => {
   }
 };
 
-// Get reviews for a specific room
+// Get reviews for a room's hotel — shows ALL hotel reviews on any room page.
+// This is intentional: each hotel has multiple rooms; reviews are per-booking
+// (which ties to one room), but guests expect to see the hotel's full reputation.
 // GET /api/reviews/room/:roomId
 export const getRoomReviews = async (req, res) => {
   try {
     const { roomId } = req.params;
 
-    const reviews = await Review.find({ room: roomId })
+    // First look up which hotel this room belongs to
+    const room = await Room.findById(roomId).select("hotel");
+    if (!room) {
+      return res.json({ success: true, reviews: [], averageRating: 0, totalReviews: 0 });
+    }
+
+    // Fetch all reviews for the hotel (across all room types)
+    const reviews = await Review.find({ hotel: room.hotel })
       .populate({
         path: "user",
         select: "username email image",
