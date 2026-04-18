@@ -7,17 +7,25 @@
  *   1. Go to https://console.upstash.com → Create a database
  *   2. Copy "UPSTASH_REDIS_REST_URL" and "UPSTASH_REDIS_REST_TOKEN"
  *   3. Add both to your .env and Vercel project env vars
+ *
+ * Graceful degradation: if env vars are missing/invalid, redisClient = null
+ * and all cache helpers silently no-op (app falls through to MongoDB).
  */
 import { Redis } from "@upstash/redis";
 
+const redisUrl = (process.env.UPSTASH_REDIS_REST_URL || "").trim();
+const redisToken = (process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
+
 let redisClient = null;
 
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-  redisClient = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
-  console.log("✅ Redis (Upstash) client initialized");
+if (redisUrl && redisToken) {
+  try {
+    redisClient = new Redis({ url: redisUrl, token: redisToken });
+    console.log("✅ Redis (Upstash) client initialized");
+  } catch (err) {
+    console.warn("⚠️  Redis init failed (caching disabled):", err.message);
+    redisClient = null;
+  }
 } else {
   console.warn("⚠️  Redis not configured — caching disabled. Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to .env");
 }
