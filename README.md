@@ -10,7 +10,7 @@
 
 **A full-stack luxury hotel booking platform built on the MERN stack with dual-layer Redis + localStorage caching, AI-powered search, real-time payments, and a hotel owner analytics dashboard.**
 
-[Live Demo](https://travesia-ten.vercel.app) · [Backend API](https://travesia-server.vercel.app)
+[Live Demo](https://travesia-fawn.vercel.app) · [Backend API](https://travesia-hotel-booking-website-back-nine.vercel.app)
 
 </div>
 
