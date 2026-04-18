@@ -1,33 +1,27 @@
 /**
- * Redis cache client — uses Upstash HTTP-based Redis.
- * Upstash works in serverless (Vercel) because it uses fetch() instead
- * of a persistent TCP connection (which breaks on serverless cold starts).
- *
- * Setup:
- *   1. Go to https://console.upstash.com → Create a database
- *   2. Copy "UPSTASH_REDIS_REST_URL" and "UPSTASH_REDIS_REST_TOKEN"
- *   3. Add both to your .env and Vercel project env vars
- *
- * Graceful degradation: if env vars are missing/invalid, redisClient = null
- * and all cache helpers silently no-op (app falls through to MongoDB).
+ * Redis cache client — Upstash HTTP-based Redis.
+ * Uses dynamic import so ANY failure (bad package, missing native dep,
+ * invalid env vars) is fully caught and never crashes the serverless function.
  */
-import { Redis } from "@upstash/redis";
 
-const redisUrl = (process.env.UPSTASH_REDIS_REST_URL || "").trim();
+const redisUrl   = (process.env.UPSTASH_REDIS_REST_URL   || "").trim();
 const redisToken = (process.env.UPSTASH_REDIS_REST_TOKEN || "").trim();
 
 let redisClient = null;
 
 if (redisUrl && redisToken) {
   try {
+    // Dynamic import — catches failures at the IMPORT level too,
+    // not just the constructor level.
+    const { Redis } = await import("@upstash/redis");
     redisClient = new Redis({ url: redisUrl, token: redisToken });
     console.log("✅ Redis (Upstash) client initialized");
   } catch (err) {
-    console.warn("⚠️  Redis init failed (caching disabled):", err.message);
+    console.warn("⚠️  Redis init failed — caching disabled:", err.message);
     redisClient = null;
   }
 } else {
-  console.warn("⚠️  Redis not configured — caching disabled. Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to .env");
+  console.warn("⚠️  Redis not configured — caching disabled (set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN)");
 }
 
 export default redisClient;

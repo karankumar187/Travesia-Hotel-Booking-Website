@@ -7,15 +7,12 @@ import clerkWebhooks from "./controllers/clerkWebhooks.js";
 import userRouter from "./routes/userRoutes.js";
 import hotelRouter from "./routes/hotelRoutes.js";
 import connectCloudinary from "./configs/cloudinaryApi.js";
-
 import roomRouter from "./routes/roomRoutes.js";
 import bookingRouter from "./routes/bookingRoutes.js";
 import reviewRouter from "./routes/reviewRoutes.js";
 import statsRouter from "./routes/statsRoutes.js";
 import aiRouter from "./routes/aiRoutes.js";
 import { testEmail } from "./controllers/emailController.js";
-import { createServer } from "http";
-import { Server } from "socket.io";
 
 connectCloudinary();
 
@@ -30,14 +27,24 @@ const ensureDB = async (req, res, next) => {
   }
 };
 
-
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: { origin: "*" }
-});
 
-// Pass io to request so controllers can use it
+// Socket.io only works in long-running servers (not Vercel serverless).
+// We attach it conditionally so the module doesn't crash on Vercel.
+let io = null;
+const isServerless = process.env.VERCEL === "1" || process.env.VERCEL === "true";
+
+if (!isServerless) {
+  const { createServer } = await import("http");
+  const { Server } = await import("socket.io");
+  const httpServer = createServer(app);
+  io = new Server(httpServer, { cors: { origin: "*" } });
+
+  const PORT = process.env.PORT || 3000;
+  httpServer.listen(PORT, () => console.log(`🚀 Server running on PORT ${PORT}`));
+}
+
+// Attach io to every request (null-safe — controllers check before emitting)
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -45,14 +52,10 @@ app.use((req, res, next) => {
 
 app.use(cors());
 
-// Clerk webhook (RAW body)
-app.post(
-  "/api/clerk",
-  express.raw({ type: "application/json" }),
-  clerkWebhooks
-);
+// Clerk webhook (RAW body — must come before express.json())
+app.post("/api/clerk", express.raw({ type: "application/json" }), clerkWebhooks);
 
-// normal middleware
+// Normal middleware
 app.use(express.json());
 app.use(clerkMiddleware());
 
@@ -69,16 +72,7 @@ app.use("/api/reviews", reviewRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/ai", aiRouter);
 
-// Test email endpoint (for debugging)
 app.post("/api/test-email", testEmail);
 
-// Export for Vercel serverless functions
+// Export for Vercel serverless
 export default app;
-
-// Start server for local development
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  const PORT = process.env.PORT || 3000;
-  httpServer.listen(PORT, () =>
-    console.log(`🚀 Server running on PORT ${PORT}`)
-  );
-}
