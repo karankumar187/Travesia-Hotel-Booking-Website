@@ -3,7 +3,6 @@ import Booking from "../models/Booking.js";
 import Room from "../models/Room.js";
 import Hotel from "../models/Hotel.js";
 import User from "../models/User.js";
-import { cacheGet, cacheSet, cacheDel, cacheDelPattern, KEYS, TTL } from "../utils/cache.js";
 
 // Create a review for a booking
 // POST /api/reviews
@@ -93,15 +92,6 @@ export const createReview = async (req, res) => {
         select: "name",
       });
 
-    // Invalidate related caches so the new review surfaces immediately
-    await cacheDel([
-      KEYS.roomReviews(booking.room._id.toString()),
-      KEYS.hotelReviewStats(booking.hotel._id.toString()),
-      KEYS.rooms(), // room list embeds review stats
-    ]);
-    // Invalidate all "recent reviews" cache keys (limit can vary)
-    await cacheDelPattern("travesia:reviews:recent:*");
-
     res.json({
       success: true,
       message: "Review created successfully",
@@ -123,94 +113,122 @@ export const createReview = async (req, res) => {
   }
 };
 
+// Get reviews for a room's hotel — shows ALL hotel reviews on any room page.
+// This is intentional: each hotel has multiple rooms; reviews are per-booking
+// (which ties to one room), but guests expect to see the hotel's full reputation.
+// GET /api/reviews/room/:roomId
 export const getRoomReviews = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const cacheKey = KEYS.roomReviews(roomId);
 
-    const cached = await cacheGet(cacheKey);
-    if (cached) return res.json({ ...cached, fromCache: true });
-
-    // Resolve hotel for this room
+    // First look up which hotel this room belongs to
     const room = await Room.findById(roomId).select("hotel");
     if (!room) {
       return res.json({ success: true, reviews: [], averageRating: 0, totalReviews: 0 });
     }
 
+    // Fetch all reviews for the hotel (across all room types)
     const reviews = await Review.find({ hotel: room.hotel })
-      .populate({ path: "user", select: "username email image" })
-      .populate({ path: "room", select: "roomType" })
-      .populate({ path: "hotel", select: "name" })
+      .populate({
+        path: "user",
+        select: "username email image",
+      })
+      .populate({
+        path: "room",
+        select: "roomType",
+      })
+      .populate({
+        path: "hotel",
+        select: "name",
+      })
       .sort({ createdAt: -1 });
 
+    // Calculate average rating
     const averageRating =
       reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
         : 0;
 
-    const payload = {
+    res.json({
       success: true,
       reviews,
       averageRating: Math.round(averageRating * 10) / 10,
       totalReviews: reviews.length,
-    };
-
-    await cacheSet(cacheKey, payload, TTL.roomReviews);
-    res.json(payload);
+    });
   } catch (error) {
     console.error("GET ROOM REVIEWS ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch reviews", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch reviews",
+      error: error.message,
+    });
   }
 };
 
+// Get recent reviews for home page
+// GET /api/reviews/recent
 export const getRecentReviews = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 6;
-    const cacheKey = KEYS.recentReviews(limit);
-
-    const cached = await cacheGet(cacheKey);
-    if (cached) return res.json({ ...cached, fromCache: true });
 
     const reviews = await Review.find()
-      .populate({ path: "user", select: "username email image" })
-      .populate({ path: "room", select: "roomType images" })
-      .populate({ path: "hotel", select: "name address city" })
+      .populate({
+        path: "user",
+        select: "username email image",
+      })
+      .populate({
+        path: "room",
+        select: "roomType images",
+      })
+      .populate({
+        path: "hotel",
+        select: "name address city",
+      })
       .sort({ createdAt: -1 })
       .limit(limit);
 
-    const payload = { success: true, reviews };
-    await cacheSet(cacheKey, payload, TTL.recentReviews);
-    res.json(payload);
+    res.json({
+      success: true,
+      reviews,
+    });
   } catch (error) {
     console.error("GET RECENT REVIEWS ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch recent reviews", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch recent reviews",
+      error: error.message,
+    });
   }
 };
 
+// Get review statistics for a hotel
+// GET /api/reviews/hotel/:hotelId/stats
 export const getHotelReviewStats = async (req, res) => {
   try {
     const { hotelId } = req.params;
-    const cacheKey = KEYS.hotelReviewStats(hotelId);
-
-    const cached = await cacheGet(cacheKey);
-    if (cached) return res.json({ ...cached, fromCache: true });
 
     const reviews = await Review.find({ hotel: hotelId });
+
     const totalReviews = reviews.length;
     const averageRating =
       totalReviews > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
         : 0;
 
-    const payload = {
+    res.json({
       success: true,
-      stats: { totalReviews, averageRating: Math.round(averageRating * 10) / 10 },
-    };
-    await cacheSet(cacheKey, payload, TTL.hotelReviewStats);
-    res.json(payload);
+      stats: {
+        totalReviews,
+        averageRating: Math.round(averageRating * 10) / 10,
+      },
+    });
   } catch (error) {
     console.error("GET HOTEL REVIEW STATS ERROR:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch hotel review stats", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch hotel review stats",
+      error: error.message,
+    });
   }
 };
 
