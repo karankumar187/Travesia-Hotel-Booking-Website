@@ -49,13 +49,52 @@ export const AppProvider = ({ children }) => {
     }
   }, [searchedCities, user]);
 
-  const fetchRooms = async () => {
+  const ROOMS_CACHE_KEY = "travesia_rooms_cache";
+  const ROOMS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Read cached rooms from localStorage — returns null if missing/expired
+  const getCachedRooms = () => {
     try {
+      const raw = localStorage.getItem(ROOMS_CACHE_KEY);
+      if (!raw) return null;
+      const { data: rooms, timestamp } = JSON.parse(raw);
+      const isExpired = Date.now() - timestamp > ROOMS_CACHE_TTL;
+      return { rooms, isExpired };
+    } catch {
+      return null;
+    }
+  };
+
+  const saveCachedRooms = (rooms) => {
+    try {
+      localStorage.setItem(ROOMS_CACHE_KEY, JSON.stringify({ data: rooms, timestamp: Date.now() }));
+    } catch { /* quota exceeded — ignore */ }
+  };
+
+  const fetchRooms = async ({ forceRefresh = false } = {}) => {
+    try {
+      // 1. Serve cache immediately (stale-while-revalidate)
+      const cached = getCachedRooms();
+      if (cached && !forceRefresh) {
+        setRooms(cached.rooms); // instant — no spinner
+        if (!cached.isExpired) return; // Fresh — skip network call
+        // Stale — continue to re-fetch silently in background
+      }
+
+      // 2. Fetch fresh data from server
       const { data } = await axios.get("/api/rooms");
-      if (data.success) setRooms(data.rooms);
-      else toast.error(data.message || "Failed to fetch rooms");
+      if (data.success) {
+        setRooms(data.rooms);
+        saveCachedRooms(data.rooms); // update cache
+      } else {
+        toast.error(data.message || "Failed to fetch rooms");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || "Failed to fetch rooms");
+      // If network fails but we have cache, stay silent — user sees cached data
+      const cached = getCachedRooms();
+      if (!cached) {
+        toast.error(error.response?.data?.message || error.message || "Failed to fetch rooms");
+      }
     }
   };
 
@@ -165,7 +204,8 @@ export const AppProvider = ({ children }) => {
     setSearchedCities,
     rooms,
     setRooms,
-    fetchUser, // Expose fetchUser so components can refresh user data
+    fetchRooms,
+    fetchUser,
     wishlist,
     toggleWishlist,
     ownerHotels,
